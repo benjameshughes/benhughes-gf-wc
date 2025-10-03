@@ -15,6 +15,7 @@ use BenHughes\GravityFormsWC\Admin\AdminToolbar;
 use BenHughes\GravityFormsWC\Admin\EditorScript;
 use BenHughes\GravityFormsWC\Admin\FieldSettings;
 use BenHughes\GravityFormsWC\Admin\SettingsPage;
+use BenHughes\GravityFormsWC\API\CalculatorController;
 use BenHughes\GravityFormsWC\Assets\AssetManager;
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
 use BenHughes\GravityFormsWC\Integration\WooCommerceCart;
@@ -200,6 +201,14 @@ class ServiceProvider {
 				)
 			);
 
+			// REST API controller
+			$this->container->register(
+				CalculatorController::class,
+				fn( Container $c ) => new CalculatorController(
+					$c->get( CartService::class )
+				)
+			);
+
 			// Asset manager (requires cart integration)
 			$this->container->register(
 				AssetManager::class,
@@ -238,6 +247,11 @@ class ServiceProvider {
 		if ( class_exists( 'WooCommerce' ) ) {
 			$this->container->get( WooCommerceCart::class );
 			$this->container->get( AssetManager::class );
+
+			// Register REST API routes
+			add_action( 'rest_api_init', function () {
+				$this->container->get( CalculatorController::class )->register_routes();
+			} );
 		}
 	}
 }
