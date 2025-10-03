@@ -12,13 +12,49 @@ declare(strict_types=1);
 
 namespace BenHughes\GravityFormsWC\Validation;
 
+use BenHughes\GravityFormsWC\Enums\ValidationStatus;
+use BenHughes\GravityFormsWC\Repositories\FormRepositoryInterface;
+use BenHughes\GravityFormsWC\Repositories\ProductRepositoryInterface;
+use BenHughes\GravityFormsWC\ValueObjects\ValidationError;
+use BenHughes\GravityFormsWC\ValueObjects\ValidationResult;
+
 /**
  * Validates form and product configurations
  */
 class ConfigValidator {
 
 	/**
-	 * Validation result codes
+	 * Form repository
+	 *
+	 * @var FormRepositoryInterface
+	 */
+	private FormRepositoryInterface $form_repository;
+
+	/**
+	 * Product repository
+	 *
+	 * @var ProductRepositoryInterface
+	 */
+	private ProductRepositoryInterface $product_repository;
+
+	/**
+	 * Constructor
+	 *
+	 * @param FormRepositoryInterface    $form_repository    Form repository.
+	 * @param ProductRepositoryInterface $product_repository Product repository.
+	 */
+	public function __construct(
+		FormRepositoryInterface $form_repository,
+		ProductRepositoryInterface $product_repository
+	) {
+		$this->form_repository    = $form_repository;
+		$this->product_repository = $product_repository;
+	}
+
+	/**
+	 * Validation result codes (deprecated - use ValidationStatus enum)
+	 *
+	 * @deprecated 2.4.0 Use ValidationStatus enum instead
 	 */
 	public const VALID              = 'valid';
 	public const ERROR_NO_PRODUCT   = 'no_product';
@@ -56,8 +92,7 @@ class ConfigValidator {
 			return false;
 		}
 
-		$product = wc_get_product( $product_id );
-		return $product && $product->exists();
+		return $this->product_repository->exists( $product_id );
 	}
 
 	/**
@@ -71,8 +106,7 @@ class ConfigValidator {
 			return null;
 		}
 
-		$product = wc_get_product( $product_id );
-		return $product && $product->exists() ? $product->get_name() : null;
+		return $this->product_repository->getName( $product_id );
 	}
 
 	/**
@@ -87,14 +121,9 @@ class ConfigValidator {
 			return false;
 		}
 
-		$form = \GFAPI::get_form( $form_id );
-		if ( ! $form ) {
-			return false;
-		}
-
-		// Check if field exists
-		$field = \GFAPI::get_field( $form, $field_id );
-		return null !== $field;
+		// Convert to int for field check
+		$field_id_int = is_numeric( $field_id ) ? (int) $field_id : 0;
+		return $this->form_repository->fieldExists( $form_id, $field_id_int );
 	}
 
 	/**
@@ -109,10 +138,9 @@ class ConfigValidator {
 			return null;
 		}
 
-		$form  = \GFAPI::get_form( $form_id );
-		$field = \GFAPI::get_field( $form, $field_id );
-
-		return $field ? $field->get_field_label( false, '' ) : null;
+		// Convert to int for field check
+		$field_id_int = is_numeric( $field_id ) ? (int) $field_id : 0;
+		return $this->form_repository->getFieldLabel( $form_id, $field_id_int );
 	}
 
 	/**
@@ -215,34 +243,32 @@ class ConfigValidator {
 			return [];
 		}
 
-		$forms            = \GFAPI::get_forms();
-		$configured_forms = [];
+		$calculator_configs = $this->form_repository->findByFieldType( 'wc_price_calculator' );
+		$configured_forms   = [];
 
-		foreach ( $forms as $form ) {
-			// Look for Price Calculator fields
-			foreach ( $form['fields'] as $field ) {
-				if ( 'wc_price_calculator' === $field->type ) {
-					$config = [
-						'formId'       => $form['id'],
-						'formTitle'    => $form['title'],
-						'fieldId'      => $field->id,
-						'productId'    => (int) ( $field->wcProductId ?? 0 ),
-						'widthFieldId' => $field->widthFieldId ?? '',
-						'dropFieldId'  => $field->dropFieldId ?? '',
-						'priceFieldId' => $field->id,
-					];
+		foreach ( $calculator_configs as $item ) {
+			$form  = $item['form'];
+			$field = $item['field'];
 
-					// Validate configuration
-					$validation = $this->validate_configuration( $config );
+			$config = [
+				'formId'       => $form['id'],
+				'formTitle'    => $form['title'],
+				'fieldId'      => $field->id,
+				'productId'    => (int) ( $field->wcProductId ?? 0 ),
+				'widthFieldId' => $field->widthFieldId ?? '',
+				'dropFieldId'  => $field->dropFieldId ?? '',
+				'priceFieldId' => $field->id,
+			];
 
-					$configured_forms[] = [
-						'form'       => $form,
-						'field'      => $field,
-						'config'     => $config,
-						'validation' => $validation,
-					];
-				}
-			}
+			// Validate configuration
+			$validation = $this->validate_configuration( $config );
+
+			$configured_forms[] = [
+				'form'       => $form,
+				'field'      => $field,
+				'config'     => $config,
+				'validation' => $validation,
+			];
 		}
 
 		return $configured_forms;
