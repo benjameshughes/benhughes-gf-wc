@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace BenHughes\GravityFormsWC\Calculation;
 
+use BenHughes\GravityFormsWC\Enums\MeasurementUnit;
+use BenHughes\GravityFormsWC\ValueObjects\PriceCalculation;
+
 /**
  * Handles all price calculations with unit conversions
  */
@@ -21,32 +24,21 @@ class PriceCalculator {
 	/**
 	 * Calculate price based on dimensions and unit
 	 *
-	 * @param float  $width      Width value as entered by customer.
-	 * @param float  $drop       Drop/height value as entered by customer.
-	 * @param string $unit       Unit of measurement (mm, cm, in).
-	 * @param int    $product_id WooCommerce product ID.
-	 * @return array {
-	 *     @type float  $price              Final calculated price (sale if on sale, otherwise regular).
-	 *     @type float  $regular_price      Calculated regular price (area × regular price/m²).
-	 *     @type float  $sale_price         Calculated sale price (area × sale price/m²) - 0 if not on sale.
-	 *     @type bool   $is_on_sale         Whether product is on sale.
-	 *     @type float  $width_cm           Width converted to cm.
-	 *     @type float  $drop_cm            Drop converted to cm.
-	 *     @type float  $area_m2            Area in square meters.
-	 *     @type float  $regular_price_m2   Regular price per square meter from product.
-	 *     @type float  $sale_price_m2      Sale price per square meter from product.
-	 *     @type string $unit               Original unit.
-	 * }
+	 * @param float           $width      Width value as entered by customer.
+	 * @param float           $drop       Drop/height value as entered by customer.
+	 * @param MeasurementUnit $unit       Unit of measurement enum.
+	 * @param int             $product_id WooCommerce product ID.
+	 * @return PriceCalculation Immutable calculation result.
 	 */
-	public function calculate( float $width, float $drop, string $unit, int $product_id ): array {
+	public function calculate( float $width, float $drop, MeasurementUnit $unit, int $product_id ): PriceCalculation {
 		// Validate inputs
 		if ( $width <= 0 || $drop <= 0 ) {
-			return $this->empty_result();
+			return PriceCalculation::empty();
 		}
 
-		// Convert to centimeters (our base unit)
-		$width_cm = $this->convert_to_cm( $width, $unit );
-		$drop_cm  = $this->convert_to_cm( $drop, $unit );
+		// Convert to centimeters (our base unit) using enum method
+		$width_cm = $unit->toCentimeters( $width );
+		$drop_cm  = $unit->toCentimeters( $drop );
 
 		// Calculate area in square meters
 		$area_m2 = ( $width_cm / 100 ) * ( $drop_cm / 100 );
@@ -54,7 +46,7 @@ class PriceCalculator {
 		// Get product pricing
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			return $this->empty_result();
+			return PriceCalculation::empty();
 		}
 
 		$regular_price_m2 = (float) $product->get_regular_price();
@@ -68,48 +60,25 @@ class PriceCalculator {
 		// Final price (sale if on sale, otherwise regular)
 		$price = $is_on_sale ? $sale_price : $regular_price;
 
-		return [
-			'price'            => $price,
-			'regular_price'    => $regular_price,
-			'sale_price'       => $sale_price,
-			'is_on_sale'       => $is_on_sale,
-			'width_cm'         => $width_cm,
-			'drop_cm'          => $drop_cm,
-			'area_m2'          => $area_m2,
-			'regular_price_m2' => $regular_price_m2,
-			'sale_price_m2'    => $sale_price_m2,
-			'unit'             => $unit,
-		];
-	}
-
-	/**
-	 * Convert measurement value to centimeters
-	 *
-	 * @param float  $value Value to convert.
-	 * @param string $unit  Unit (mm, cm, or in).
-	 * @return float Value in centimeters.
-	 */
-	private function convert_to_cm( float $value, string $unit ): float {
-		switch ( $unit ) {
-			case 'mm':
-				return $value / 10;     // 100mm = 10cm
-			case 'in':
-				return $value * 2.54;   // 100in = 254cm
-			case 'cm':
-			default:
-				return $value;          // 100cm = 100cm
-		}
+		return new PriceCalculation(
+			price: $price,
+			regularPrice: $regular_price,
+			salePrice: $sale_price,
+			isOnSale: $is_on_sale,
+			widthCm: $width_cm,
+			dropCm: $drop_cm,
+			areaM2: $area_m2,
+			regularPriceM2: $regular_price_m2,
+			salePriceM2: $sale_price_m2,
+			unit: $unit,
+		);
 	}
 
 	/**
 	 * Get product pricing details for frontend display
 	 *
 	 * @param int $product_id Product ID.
-	 * @return array {
-	 *     @type float $regular_price Regular price per m².
-	 *     @type float $sale_price    Sale price per m² (0 if not on sale).
-	 *     @type bool  $is_on_sale    Whether product is on sale.
-	 * }
+	 * @return array<string, mixed> Product pricing data for JavaScript.
 	 */
 	public function get_product_pricing( int $product_id ): array {
 		$product = wc_get_product( $product_id );
@@ -130,26 +99,6 @@ class PriceCalculator {
 			'regular_price' => $regular_price,
 			'sale_price'    => $sale_price,
 			'is_on_sale'    => $is_on_sale,
-		];
-	}
-
-	/**
-	 * Return empty result array
-	 *
-	 * @return array
-	 */
-	private function empty_result(): array {
-		return [
-			'price'            => 0.0,
-			'regular_price'    => 0.0,
-			'sale_price'       => 0.0,
-			'is_on_sale'       => false,
-			'width_cm'         => 0.0,
-			'drop_cm'          => 0.0,
-			'area_m2'          => 0.0,
-			'regular_price_m2' => 0.0,
-			'sale_price_m2'    => 0.0,
-			'unit'             => 'cm',
 		];
 	}
 }

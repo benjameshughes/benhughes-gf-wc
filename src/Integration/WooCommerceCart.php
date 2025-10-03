@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace BenHughes\GravityFormsWC\Integration;
 
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
+use BenHughes\GravityFormsWC\Enums\MeasurementUnit;
 use GFFormDisplay;
 use WC;
 
@@ -100,8 +101,9 @@ class WooCommerceCart {
 
                 if ( $width && $drop ) {
                     // Use the centralized calculator
-                    $calculation = $this->calculator->calculate( (float) $width, (float) $drop, (string) $unit, $product_id );
-                    $price       = $calculation['price'];
+                    $unit_enum   = MeasurementUnit::tryFrom( (string) $unit ) ?? MeasurementUnit::default();
+                    $calculation = $this->calculator->calculate( (float) $width, (float) $drop, $unit_enum, $product_id );
+                    $price       = $calculation->price;
 
                     $_POST[ 'input_' . $field->id ] = $price;
                     $field->defaultValue             = $price;
@@ -132,17 +134,18 @@ class WooCommerceCart {
         }
 
         // Calculate price using our centralized calculator
-        $result = $this->calculator->calculate( $width, $drop, $unit, $product_id );
+        $unit_enum = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+        $result    = $this->calculator->calculate( $width, $drop, $unit_enum, $product_id );
 
-        // Return response with all calculation details
+        // Return response with all calculation details - use toArray() for compatibility
         wp_send_json_success( [
-            'price'         => number_format( $result['price'], 2, '.', '' ),
-            'regular_price' => number_format( $result['regular_price'], 2, '.', '' ),
-            'sale_price'    => number_format( $result['sale_price'], 2, '.', '' ),
-            'is_on_sale'    => $result['is_on_sale'],
-            'area'          => number_format( $result['area_m2'], 2, '.', '' ),
-            'width_cm'      => number_format( $result['width_cm'], 2, '.', '' ),
-            'drop_cm'       => number_format( $result['drop_cm'], 2, '.', '' ),
+            'price'         => number_format( $result->price, 2, '.', '' ),
+            'regular_price' => number_format( $result->regularPrice, 2, '.', '' ),
+            'sale_price'    => number_format( $result->salePrice, 2, '.', '' ),
+            'is_on_sale'    => $result->isOnSale,
+            'area'          => number_format( $result->areaM2, 2, '.', '' ),
+            'width_cm'      => number_format( $result->widthCm, 2, '.', '' ),
+            'drop_cm'       => number_format( $result->dropCm, 2, '.', '' ),
         ] );
     }
 
@@ -186,7 +189,8 @@ class WooCommerceCart {
         $unit      = $unit_field_id > 0 && isset( $parsed_data[ 'input_' . $unit_field_id ] ) ? $parsed_data[ 'input_' . $unit_field_id ] : 'cm';
 
         // Calculate using our centralized calculator (SINGLE SOURCE OF TRUTH)
-        $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit, $product_id );
+        $unit_enum   = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+        $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit_enum, $product_id );
 
         // Debug logging
         error_log( sprintf(
@@ -196,7 +200,7 @@ class WooCommerceCart {
             $drop_raw,
             $unit,
             $product_id,
-            number_format( $calculation['price'], 2 )
+            number_format( $calculation->price, 2 )
         ) );
 
         // Get the frontend-submitted price for validation
@@ -205,12 +209,12 @@ class WooCommerceCart {
             : 0;
 
         // Security validation: Compare frontend vs backend price
-        if ( $frontend_price > 0 && abs( $frontend_price - $calculation['price'] ) > 0.01 ) {
+        if ( $frontend_price > 0 && abs( $frontend_price - $calculation->price ) > 0.01 ) {
             // Price mismatch - frontend may have been tampered with
             error_log( sprintf(
                 'GF-WC: Price mismatch detected. Frontend: £%s, Backend: £%s',
                 number_format( $frontend_price, 2 ),
-                number_format( $calculation['price'], 2 )
+                number_format( $calculation->price, 2 )
             ) );
         }
 
@@ -227,14 +231,14 @@ class WooCommerceCart {
             'color'         => $this->get_parsed_value( $parsed_data, '49' ),
             // Hidden meta data for production (prefixed with _ to hide from customer)
             '_measurement_unit' => $unit,
-            '_width_cm'         => number_format( $calculation['width_cm'], 2, '.', '' ),
-            '_drop_cm'          => number_format( $calculation['drop_cm'], 2, '.', '' ),
-            '_area_m2'          => number_format( $calculation['area_m2'], 4, '.', '' ),
+            '_width_cm'         => number_format( $calculation->widthCm, 2, '.', '' ),
+            '_drop_cm'          => number_format( $calculation->dropCm, 2, '.', '' ),
+            '_area_m2'          => number_format( $calculation->areaM2, 4, '.', '' ),
             // Store the calculated prices (single source of truth)
-            'gf_total'          => number_format( $calculation['price'], 2, '.', '' ),
-            'gf_regular_price'  => number_format( $calculation['regular_price'], 2, '.', '' ),
-            'gf_sale_price'     => $calculation['is_on_sale'] ? number_format( $calculation['sale_price'], 2, '.', '' ) : '',
-            'gf_is_on_sale'     => $calculation['is_on_sale'] ? '1' : '0',
+            'gf_total'          => number_format( $calculation->price, 2, '.', '' ),
+            'gf_regular_price'  => number_format( $calculation->regularPrice, 2, '.', '' ),
+            'gf_sale_price'     => $calculation->isOnSale ? number_format( $calculation->salePrice, 2, '.', '' ) : '',
+            'gf_is_on_sale'     => $calculation->isOnSale ? '1' : '0',
         ];
 
         // Remove empty values
@@ -419,7 +423,8 @@ class WooCommerceCart {
         $unit      = $unit_field_id > 0 ? rgar( $entry, $unit_field_id ) : 'cm';
 
         // Calculate using our centralized calculator
-        $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit, $product_id );
+        $unit_enum   = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+        $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit_enum, $product_id );
 
         // Debug logging
         error_log( sprintf(
@@ -429,7 +434,7 @@ class WooCommerceCart {
             $drop_raw,
             $unit,
             $product_id,
-            number_format( $calculation['price'], 2 )
+            number_format( $calculation->price, 2 )
         ) );
 
         // Collect shutter configuration data with actual field IDs from your form
@@ -445,9 +450,9 @@ class WooCommerceCart {
             'color'         => $this->get_image_choice_value( $entry, '49' ),
             // Hidden meta data for production (prefixed with _ to hide from customer)
             '_measurement_unit' => $unit,
-            '_width_cm'         => number_format( $calculation['width_cm'], 2, '.', '' ),
-            '_drop_cm'          => number_format( $calculation['drop_cm'], 2, '.', '' ),
-            '_area_m2'          => number_format( $calculation['area_m2'], 4, '.', '' ),
+            '_width_cm'         => number_format( $calculation->widthCm, 2, '.', '' ),
+            '_drop_cm'          => number_format( $calculation->dropCm, 2, '.', '' ),
+            '_area_m2'          => number_format( $calculation->areaM2, 4, '.', '' ),
         ];
 
         // Quantity is always 1 (field 46 is for panel count display, not cart quantity)
@@ -465,10 +470,10 @@ class WooCommerceCart {
         $custom_data['gf_entry_id'] = $entry['id'];
 
         // Use the calculated prices from our calculator (SINGLE SOURCE OF TRUTH)
-        $custom_data['gf_total']         = number_format( $calculation['price'], 2, '.', '' );
-        $custom_data['gf_regular_price'] = number_format( $calculation['regular_price'], 2, '.', '' );
-        $custom_data['gf_sale_price']    = $calculation['is_on_sale'] ? number_format( $calculation['sale_price'], 2, '.', '' ) : '';
-        $custom_data['gf_is_on_sale']    = $calculation['is_on_sale'] ? '1' : '0';
+        $custom_data['gf_total']         = number_format( $calculation->price, 2, '.', '' );
+        $custom_data['gf_regular_price'] = number_format( $calculation->regularPrice, 2, '.', '' );
+        $custom_data['gf_sale_price']    = $calculation->isOnSale ? number_format( $calculation->salePrice, 2, '.', '' ) : '';
+        $custom_data['gf_is_on_sale']    = $calculation->isOnSale ? '1' : '0';
         $custom_data['product_id']       = $product_id;
 
         // Add to cart
