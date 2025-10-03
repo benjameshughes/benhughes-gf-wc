@@ -12,6 +12,7 @@ namespace BenHughes\GravityFormsWC\Integration;
 
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
 use BenHughes\GravityFormsWC\Enums\MeasurementUnit;
+use BenHughes\GravityFormsWC\Services\CartService;
 use GFFormDisplay;
 use WC;
 
@@ -49,10 +50,21 @@ class WooCommerceCart {
     private PriceCalculator $calculator;
 
     /**
-     * Initialize hooks
+     * Cart service instance
+     *
+     * @var CartService
      */
-    public function __construct() {
-        $this->calculator = new PriceCalculator();
+    private CartService $cart_service;
+
+    /**
+     * Initialize hooks
+     *
+     * @param PriceCalculator $calculator   Price calculator.
+     * @param CartService     $cart_service Cart service.
+     */
+    public function __construct( PriceCalculator $calculator, CartService $cart_service ) {
+        $this->calculator   = $calculator;
+        $this->cart_service = $cart_service;
         // Dynamic form submission hooks - work with any form
         add_action( 'gform_after_submission', [ $this, 'add_to_cart' ], 10, 2 );
         add_filter( 'woocommerce_add_cart_item_data', [ $this, 'add_cart_item_data' ], 10, 4 );

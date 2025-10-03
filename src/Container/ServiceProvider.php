@@ -194,7 +194,10 @@ class ServiceProvider {
 		if ( class_exists( 'WooCommerce' ) ) {
 			$this->container->register(
 				WooCommerceCart::class,
-				fn() => new WooCommerceCart()
+				fn( Container $c ) => new WooCommerceCart(
+					$c->get( PriceCalculator::class ),
+					$c->get( CartService::class )
+				)
 			);
 
 			// Asset manager (requires cart integration)
