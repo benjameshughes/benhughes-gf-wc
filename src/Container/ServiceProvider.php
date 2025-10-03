@@ -20,6 +20,7 @@ use BenHughes\GravityFormsWC\Assets\AssetManager;
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
 use BenHughes\GravityFormsWC\Events\EventDispatcher;
 use BenHughes\GravityFormsWC\Integration\WooCommerceCart;
+use BenHughes\GravityFormsWC\Logging\Logger;
 use BenHughes\GravityFormsWC\Repositories\FormRepositoryInterface;
 use BenHughes\GravityFormsWC\Repositories\GravityFormsRepository;
 use BenHughes\GravityFormsWC\Repositories\ProductRepositoryInterface;
@@ -106,6 +107,12 @@ class ServiceProvider {
 	 * @return void
 	 */
 	private function registerCoreServices(): void {
+		// Logger (singleton)
+		$this->container->register(
+			Logger::class,
+			fn() => new Logger( 'GF-WC' )
+		);
+
 		// Event dispatcher (singleton)
 		$this->container->register(
 			EventDispatcher::class,
@@ -212,7 +219,8 @@ class ServiceProvider {
 			$this->container->register(
 				CalculatorController::class,
 				fn( Container $c ) => new CalculatorController(
-					$c->get( CartService::class )
+					$c->get( CartService::class ),
+					$c->get( Logger::class )
 				)
 			);
 

@@ -11,6 +11,10 @@ declare(strict_types=1);
 namespace BenHughes\GravityFormsWC\API;
 
 use BenHughes\GravityFormsWC\Enums\MeasurementUnit;
+use BenHughes\GravityFormsWC\Exceptions\GravityFormsWCException;
+use BenHughes\GravityFormsWC\Exceptions\ProductNotFoundException;
+use BenHughes\GravityFormsWC\Exceptions\ValidationException;
+use BenHughes\GravityFormsWC\Logging\Logger;
 use BenHughes\GravityFormsWC\Services\CartService;
 use WP_Error;
 use WP_REST_Request;
@@ -37,12 +41,21 @@ class CalculatorController extends WP_REST_Controller {
 	private CartService $cart_service;
 
 	/**
+	 * Logger
+	 *
+	 * @var Logger
+	 */
+	private Logger $logger;
+
+	/**
 	 * Constructor
 	 *
 	 * @param CartService $cart_service Cart service.
+	 * @param Logger      $logger       Logger.
 	 */
-	public function __construct( CartService $cart_service ) {
+	public function __construct( CartService $cart_service, Logger $logger ) {
 		$this->cart_service = $cart_service;
+		$this->logger       = $logger;
 	}
 
 	/**
@@ -139,55 +152,85 @@ class CalculatorController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function calculate_price( WP_REST_Request $request ) {
-		$width      = (float) $request->get_param( 'width' );
-		$drop       = (float) $request->get_param( 'drop' );
-		$unit       = (string) $request->get_param( 'unit' );
-		$product_id = (int) $request->get_param( 'product_id' );
+		try {
+			$width      = (float) $request->get_param( 'width' );
+			$drop       = (float) $request->get_param( 'drop' );
+			$unit       = (string) $request->get_param( 'unit' );
+			$product_id = (int) $request->get_param( 'product_id' );
 
-		// Validate product exists
-		if ( ! $this->cart_service->productExists( $product_id ) ) {
+			// Validate dimensions
+			if ( $width <= 0 || $drop <= 0 ) {
+				throw ValidationException::forInvalidDimensions( $width, $drop );
+			}
+
+			// Validate product exists
+			if ( ! $this->cart_service->productExists( $product_id ) ) {
+				throw ProductNotFoundException::forProductId( $product_id );
+			}
+
+			// Parse unit enum
+			$unit_enum = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+
+			// Prepare cart item data (this includes the calculation)
+			$cart_data = $this->cart_service->prepareCartItemData(
+				$product_id,
+				$width,
+				$drop,
+				$unit_enum
+			);
+
+			// Get the calculation object
+			$calculation = $cart_data['gf_wc_calculation'];
+
+			// Format display data
+			$display = $this->cart_service->formatCartItemDisplay(
+				$calculation,
+				$width,
+				$drop,
+				$unit_enum
+			);
+
+			// Log successful calculation
+			$this->logger->debug( 'Price calculated successfully', [
+				'product_id' => $product_id,
+				'width'      => $width,
+				'drop'       => $drop,
+				'unit'       => $unit,
+				'price'      => $calculation->price,
+			] );
+
+			return new WP_REST_Response(
+				[
+					'price'         => number_format( $calculation->price, 2, '.', '' ),
+					'regular_price' => number_format( $calculation->regularPrice, 2, '.', '' ),
+					'sale_price'    => number_format( $calculation->salePrice, 2, '.', '' ),
+					'is_on_sale'    => $calculation->isOnSale,
+					'area'          => number_format( $calculation->areaInMeters, 2, '.', '' ),
+					'width_cm'      => number_format( $calculation->widthCm, 2, '.', '' ),
+					'drop_cm'       => number_format( $calculation->dropCm, 2, '.', '' ),
+					'display'       => $display,
+				],
+				200
+			);
+		} catch ( GravityFormsWCException $e ) {
+			// Log our custom exceptions
+			$this->logger->error( $e->getMessage(), $e->getContext() );
+
 			return new WP_Error(
-				'product_not_found',
-				__( 'Product not found', 'gf-wc-bridge' ),
-				[ 'status' => 404 ]
+				'calculation_error',
+				$e->getMessage(),
+				[ 'status' => $e->getCode() ?: 400 ]
+			);
+		} catch ( \Throwable $e ) {
+			// Log unexpected exceptions
+			$this->logger->logException( $e, 'critical' );
+
+			return new WP_Error(
+				'unexpected_error',
+				__( 'An unexpected error occurred', 'gf-wc-bridge' ),
+				[ 'status' => 500 ]
 			);
 		}
-
-		// Parse unit enum
-		$unit_enum = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
-
-		// Prepare cart item data (this includes the calculation)
-		$cart_data = $this->cart_service->prepareCartItemData(
-			$product_id,
-			$width,
-			$drop,
-			$unit_enum
-		);
-
-		// Get the calculation object
-		$calculation = $cart_data['gf_wc_calculation'];
-
-		// Format display data
-		$display = $this->cart_service->formatCartItemDisplay(
-			$calculation,
-			$width,
-			$drop,
-			$unit_enum
-		);
-
-		return new WP_REST_Response(
-			[
-				'price'         => number_format( $calculation->price, 2, '.', '' ),
-				'regular_price' => number_format( $calculation->regularPrice, 2, '.', '' ),
-				'sale_price'    => number_format( $calculation->salePrice, 2, '.', '' ),
-				'is_on_sale'    => $calculation->isOnSale,
-				'area'          => number_format( $calculation->areaInMeters, 2, '.', '' ),
-				'width_cm'      => number_format( $calculation->widthCm, 2, '.', '' ),
-				'drop_cm'       => number_format( $calculation->dropCm, 2, '.', '' ),
-				'display'       => $display,
-			],
-			200
-		);
 	}
 
 	/**
@@ -197,76 +240,109 @@ class CalculatorController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function add_to_basket( WP_REST_Request $request ) {
-		// Check if WooCommerce is active
-		if ( ! class_exists( 'WooCommerce' ) ) {
-			return new WP_Error(
-				'woocommerce_inactive',
-				__( 'WooCommerce is not active', 'gf-wc-bridge' ),
-				[ 'status' => 503 ]
+		try {
+			// Check if WooCommerce is active
+			if ( ! class_exists( 'WooCommerce' ) ) {
+				return new WP_Error(
+					'woocommerce_inactive',
+					__( 'WooCommerce is not active', 'gf-wc-bridge' ),
+					[ 'status' => 503 ]
+				);
+			}
+
+			$product_id  = (int) $request->get_param( 'product_id' );
+			$width       = (float) $request->get_param( 'width' );
+			$drop        = (float) $request->get_param( 'drop' );
+			$unit        = (string) $request->get_param( 'unit' );
+			$quantity    = max( 1, (int) $request->get_param( 'quantity' ) );
+			$custom_data = $request->get_param( 'custom_data' ) ?? [];
+
+			// Validate dimensions
+			if ( $width <= 0 || $drop <= 0 ) {
+				throw ValidationException::forInvalidDimensions( $width, $drop );
+			}
+
+			// Validate product exists
+			if ( ! $this->cart_service->productExists( $product_id ) ) {
+				throw ProductNotFoundException::forProductId( $product_id );
+			}
+
+			// Parse unit enum
+			$unit_enum = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+
+			// Prepare cart item data with calculation
+			$cart_item_data = $this->cart_service->prepareCartItemData(
+				$product_id,
+				$width,
+				$drop,
+				$unit_enum,
+				$custom_data
 			);
-		}
 
-		$product_id  = (int) $request->get_param( 'product_id' );
-		$width       = (float) $request->get_param( 'width' );
-		$drop        = (float) $request->get_param( 'drop' );
-		$unit        = (string) $request->get_param( 'unit' );
-		$quantity    = max( 1, (int) $request->get_param( 'quantity' ) );
-		$custom_data = $request->get_param( 'custom_data' ) ?? [];
-
-		// Validate product exists
-		if ( ! $this->cart_service->productExists( $product_id ) ) {
-			return new WP_Error(
-				'product_not_found',
-				__( 'Product not found', 'gf-wc-bridge' ),
-				[ 'status' => 404 ]
+			// Add to WooCommerce cart
+			$cart_item_key = WC()->cart->add_to_cart(
+				$product_id,
+				$quantity,
+				0,
+				[],
+				$cart_item_data
 			);
-		}
 
-		// Parse unit enum
-		$unit_enum = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
+			if ( ! $cart_item_key ) {
+				$this->logger->error( 'Failed to add product to cart', [
+					'product_id' => $product_id,
+					'quantity'   => $quantity,
+				] );
 
-		// Prepare cart item data with calculation
-		$cart_item_data = $this->cart_service->prepareCartItemData(
-			$product_id,
-			$width,
-			$drop,
-			$unit_enum,
-			$custom_data
-		);
+				return new WP_Error(
+					'add_to_cart_failed',
+					__( 'Failed to add product to cart', 'gf-wc-bridge' ),
+					[ 'status' => 500 ]
+				);
+			}
 
-		// Add to WooCommerce cart
-		$cart_item_key = WC()->cart->add_to_cart(
-			$product_id,
-			$quantity,
-			0,
-			[],
-			$cart_item_data
-		);
+			// Calculate cart totals
+			WC()->cart->calculate_totals();
 
-		if ( ! $cart_item_key ) {
+			// Get cart fragments for frontend updates
+			$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', [] );
+
+			// Log successful add to cart
+			$this->logger->info( 'Product added to cart', [
+				'product_id'    => $product_id,
+				'quantity'      => $quantity,
+				'cart_item_key' => $cart_item_key,
+			] );
+
+			return new WP_REST_Response(
+				[
+					'success'    => true,
+					'message'    => __( 'Product added to cart! Configure another or checkout.', 'gf-wc-bridge' ),
+					'cart_count' => WC()->cart->get_cart_contents_count(),
+					'cart_url'   => wc_get_cart_url(),
+					'cart_hash'  => WC()->cart->get_cart_hash(),
+					'fragments'  => $fragments,
+				],
+				200
+			);
+		} catch ( GravityFormsWCException $e ) {
+			// Log our custom exceptions
+			$this->logger->error( $e->getMessage(), $e->getContext() );
+
 			return new WP_Error(
-				'add_to_cart_failed',
-				__( 'Failed to add product to cart', 'gf-wc-bridge' ),
+				'cart_error',
+				$e->getMessage(),
+				[ 'status' => $e->getCode() ?: 400 ]
+			);
+		} catch ( \Throwable $e ) {
+			// Log unexpected exceptions
+			$this->logger->logException( $e, 'critical' );
+
+			return new WP_Error(
+				'unexpected_error',
+				__( 'An unexpected error occurred', 'gf-wc-bridge' ),
 				[ 'status' => 500 ]
 			);
 		}
-
-		// Calculate cart totals
-		WC()->cart->calculate_totals();
-
-		// Get cart fragments for frontend updates
-		$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', [] );
-
-		return new WP_REST_Response(
-			[
-				'success'    => true,
-				'message'    => __( 'Product added to cart! Configure another or checkout.', 'gf-wc-bridge' ),
-				'cart_count' => WC()->cart->get_cart_contents_count(),
-				'cart_url'   => wc_get_cart_url(),
-				'cart_hash'  => WC()->cart->get_cart_hash(),
-				'fragments'  => $fragments,
-			],
-			200
-		);
 	}
 }
