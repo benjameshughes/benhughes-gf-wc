@@ -1,0 +1,24 @@
+{
+    "name": "benhughes/gravityforms-woocommerce",
+    "description": "Gravity Forms to WooCommerce Cart integration with custom price calculator field",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Ben Hughes",
+            "email": "ben@example.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "BenHughes\\GravityFormsWC\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

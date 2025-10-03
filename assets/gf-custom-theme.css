@@ -1,0 +1,803 @@
+/**
+ * Gravity Forms Custom Theme
+ * Ultra-modern, clean styling for Gravity Forms
+ *
+ * Easy Customization: Edit the CSS variables below to change colors, spacing, and sizing
+ */
+
+:root {
+    /* Primary Colors - Modern blue palette */
+    --gf-primary-color: #3b82f6;
+    --gf-primary-hover: #2563eb;
+    --gf-primary-dark: #1d4ed8;
+    --gf-primary-light: #eff6ff;
+    --gf-primary-alpha: rgba(59, 130, 246, 0.1);
+
+    /* Accent Colors */
+    --gf-accent-color: #10b981;
+    --gf-accent-light: #d1fae5;
+
+    /* Text Colors */
+    --gf-text-primary: #0f172a;
+    --gf-text-secondary: #475569;
+    --gf-text-muted: #94a3b8;
+    --gf-text-light: #cbd5e1;
+
+    /* Background Colors */
+    --gf-bg-primary: #ffffff;
+    --gf-bg-secondary: #f8fafc;
+    --gf-bg-tertiary: #f1f5f9;
+    --gf-bg-input: #ffffff;
+
+    /* Border Colors */
+    --gf-border-light: #f1f5f9;
+    --gf-border-default: #e2e8f0;
+    --gf-border-medium: #cbd5e1;
+    --gf-border-focus: #3b82f6;
+    --gf-border-error: #ef4444;
+    --gf-border-success: #10b981;
+
+    /* Spacing - Refined scale */
+    --gf-spacing-xs: 0.5rem;
+    --gf-spacing-sm: 0.75rem;
+    --gf-spacing-md: 1rem;
+    --gf-spacing-lg: 1.5rem;
+    --gf-spacing-xl: 2rem;
+    --gf-spacing-2xl: 2.5rem;
+    --gf-spacing-3xl: 3rem;
+
+    /* Border Radius - Softer, more modern */
+    --gf-radius-sm: 0.5rem;
+    --gf-radius-md: 0.75rem;
+    --gf-radius-lg: 1rem;
+    --gf-radius-xl: 1.25rem;
+    --gf-radius-2xl: 1.5rem;
+    --gf-radius-full: 9999px;
+
+    /* Shadows - Subtle and refined */
+    --gf-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --gf-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+    --gf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+    --gf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+    --gf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    --gf-shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+
+    /* Typography */
+    --gf-font-size-xs: 0.75rem;
+    --gf-font-size-sm: 0.875rem;
+    --gf-font-size-base: 1rem;
+    --gf-font-size-lg: 1.125rem;
+    --gf-font-size-xl: 1.25rem;
+    --gf-font-size-2xl: 1.5rem;
+    --gf-font-size-3xl: 1.875rem;
+    --gf-font-size-4xl: 2.25rem;
+
+    /* Line Heights */
+    --gf-leading-tight: 1.25;
+    --gf-leading-normal: 1.5;
+    --gf-leading-relaxed: 1.75;
+
+    /* Transitions */
+    --gf-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --gf-transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --gf-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   Form Container
+   ============================================ */
+
+.gform_wrapper {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.gform_wrapper form {
+    background: transparent;
+    padding: 0;
+}
+
+.gform_wrapper .gform_body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gf-spacing-lg);
+}
+
+/* ============================================
+   Form Fields
+   ============================================ */
+
+.gform_wrapper .gfield {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Labels */
+.gform_wrapper .gfield_label,
+.gform_wrapper label.gfield_label {
+    color: var(--gf-text-primary);
+    font-size: var(--gf-font-size-sm);
+    font-weight: 500;
+    margin-bottom: var(--gf-spacing-xs);
+    display: block;
+    letter-spacing: 0;
+    line-height: var(--gf-leading-normal);
+}
+
+.gform_wrapper .gfield_required,
+.gform_wrapper .gfield_required_asterisk {
+    color: var(--gf-border-error);
+    margin-left: 2px;
+    font-weight: 500;
+}
+
+/* Sub-labels */
+.gform_wrapper .gfield label,
+.gform_wrapper .ginput_complex label,
+.gform_wrapper .gfield_time_hour label,
+.gform_wrapper .gfield_time_minute label,
+.gform_wrapper .gfield_date_month label,
+.gform_wrapper .gfield_date_day label,
+.gform_wrapper .gfield_date_year label {
+    color: var(--gf-text-secondary);
+    font-size: var(--gf-font-size-xs);
+    font-weight: 500;
+    margin-bottom: var(--gf-spacing-xs);
+}
+
+/* Field Descriptions */
+.gform_wrapper .gfield_description {
+    color: var(--gf-text-muted);
+    font-size: var(--gf-font-size-xs);
+    margin-top: var(--gf-spacing-xs);
+    line-height: var(--gf-leading-normal);
+}
+
+/* Input Container */
+.gform_wrapper .ginput_container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================
+   Input Fields
+   ============================================ */
+
+.gform_wrapper input[type="text"],
+.gform_wrapper input[type="email"],
+.gform_wrapper input[type="tel"],
+.gform_wrapper input[type="url"],
+.gform_wrapper input[type="number"],
+.gform_wrapper input[type="date"],
+.gform_wrapper textarea,
+.gform_wrapper select {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    font-size: var(--gf-font-size-sm);
+    color: var(--gf-text-primary);
+    background-color: var(--gf-bg-primary);
+    border: 1px solid var(--gf-border-default);
+    border-radius: var(--gf-radius-sm);
+    transition: all var(--gf-transition-fast);
+    line-height: var(--gf-leading-normal);
+    box-shadow: var(--gf-shadow-xs);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.gform_wrapper input[type="text"]:hover,
+.gform_wrapper input[type="email"]:hover,
+.gform_wrapper input[type="tel"]:hover,
+.gform_wrapper input[type="url"]:hover,
+.gform_wrapper input[type="number"]:hover,
+.gform_wrapper input[type="date"]:hover,
+.gform_wrapper textarea:hover,
+.gform_wrapper select:hover {
+    border-color: var(--gf-border-medium);
+}
+
+.gform_wrapper input[type="text"]:focus,
+.gform_wrapper input[type="email"]:focus,
+.gform_wrapper input[type="tel"]:focus,
+.gform_wrapper input[type="url"]:focus,
+.gform_wrapper input[type="number"]:focus,
+.gform_wrapper input[type="date"]:focus,
+.gform_wrapper textarea:focus,
+.gform_wrapper select:focus {
+    outline: none;
+    border-color: var(--gf-primary-color);
+    ring: 0;
+}
+
+.gform_wrapper textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.gform_wrapper input::placeholder,
+.gform_wrapper textarea::placeholder {
+    color: var(--gf-text-muted);
+    opacity: 1;
+}
+
+/* ============================================
+   Radio & Checkbox Fields
+   ============================================ */
+
+.gform_wrapper .gfield_radio li,
+.gform_wrapper .gfield_checkbox li {
+    margin-bottom: var(--gf-spacing-md);
+}
+
+.gform_wrapper input[type="radio"],
+.gform_wrapper input[type="checkbox"] {
+    margin-right: var(--gf-spacing-sm);
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    accent-color: var(--gf-primary-color);
+}
+
+.gform_wrapper .gfield_radio label,
+.gform_wrapper .gfield_checkbox label {
+    font-weight: normal;
+    font-size: var(--gf-font-size-base);
+    color: var(--gf-text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: color var(--gf-transition-fast);
+}
+
+.gform_wrapper .gfield_radio label:hover,
+.gform_wrapper .gfield_checkbox label:hover {
+    color: var(--gf-text-primary);
+}
+
+/* ============================================
+   Image Choice Fields
+   ============================================ */
+
+.gform_wrapper .gfield_image_choice_wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--gf-spacing-md);
+}
+
+.gform_wrapper .gfield_image_choice {
+    position: relative;
+}
+
+.gform_wrapper .gfield_image_choice input[type="radio"],
+.gform_wrapper .gfield_image_choice input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.gform_wrapper .gfield_image_choice label {
+    display: block;
+    padding: var(--gf-spacing-sm);
+    border: 1px solid var(--gf-border-default);
+    border-radius: var(--gf-radius-md);
+    cursor: pointer;
+    transition: all var(--gf-transition-fast);
+    background: var(--gf-bg-primary);
+    position: relative;
+}
+
+.gform_wrapper .gfield_image_choice label:hover {
+    border-color: var(--gf-border-medium);
+    box-shadow: var(--gf-shadow-sm);
+}
+
+.gform_wrapper .gfield_image_choice input:checked + label {
+    border-color: var(--gf-primary-color);
+    border-width: 2px;
+    background: var(--gf-primary-light);
+}
+
+.gform_wrapper .gfield_image_choice input:checked + label::before {
+    content: "✓";
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: var(--gf-primary-color);
+    color: white;
+    border-radius: var(--gf-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.gform_wrapper .gfield_image_choice img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--gf-radius-sm);
+    margin-bottom: 0;
+    display: block;
+}
+
+.gform_wrapper .gfield_image_choice .gform-field-label {
+    font-size: var(--gf-font-size-xs);
+    color: var(--gf-text-secondary);
+    font-weight: 500;
+    text-align: center;
+    margin-top: var(--gf-spacing-xs);
+}
+
+/* ============================================
+   Multi-Step Navigation (Progress Bar)
+   ============================================ */
+
+.gform_wrapper .gf_progressbar_wrapper {
+    margin-bottom: var(--gf-spacing-xl);
+}
+
+.gform_wrapper .gf_progressbar {
+    background: var(--gf-bg-tertiary);
+    border-radius: var(--gf-radius-full);
+    height: 8px;
+    overflow: hidden;
+}
+
+.gform_wrapper .gf_progressbar_percentage {
+    background: var(--gf-primary-color);
+    height: 100%;
+    border-radius: var(--gf-radius-full);
+    transition: width var(--gf-transition-slow);
+}
+
+.gform_wrapper .gf_progressbar_title {
+    text-align: right;
+    color: var(--gf-text-muted);
+    font-size: var(--gf-font-size-xs);
+    margin-top: var(--gf-spacing-xs);
+    font-weight: 500;
+}
+
+/* Page Steps */
+.gform_wrapper .gf_page_steps {
+    display: flex;
+    justify-content: flex-start;
+    gap: var(--gf-spacing-sm);
+    margin-bottom: var(--gf-spacing-xl);
+    padding: 0;
+    list-style: none;
+}
+
+.gform_wrapper .gf_step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gf-spacing-xs);
+}
+
+.gform_wrapper .gf_step_number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--gf-radius-full);
+    background: var(--gf-bg-secondary);
+    color: var(--gf-text-muted);
+    font-weight: 500;
+    font-size: var(--gf-font-size-sm);
+    border: 1px solid var(--gf-border-default);
+    transition: all var(--gf-transition-fast);
+}
+
+.gform_wrapper .gf_step_active .gf_step_number {
+    background: var(--gf-primary-color);
+    color: white;
+    border-color: var(--gf-primary-color);
+}
+
+.gform_wrapper .gf_step_completed .gf_step_number {
+    background: var(--gf-accent-color);
+    color: white;
+    border-color: var(--gf-accent-color);
+}
+
+.gform_wrapper .gf_step_completed .gf_step_number::after {
+    content: "✓";
+}
+
+.gform_wrapper .gf_step_label {
+    display: block;
+    color: var(--gf-text-muted);
+    font-size: var(--gf-font-size-xs);
+    font-weight: 500;
+}
+
+.gform_wrapper .gf_step_active .gf_step_label {
+    color: var(--gf-text-primary);
+    font-weight: 500;
+}
+
+.gform_wrapper .gf_step_completed .gf_step_label {
+    color: var(--gf-text-secondary);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.gform_wrapper .gform_button,
+.gform_wrapper .gform_next_button,
+.gform_wrapper .gform_previous_button,
+.gform_wrapper input[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1.25rem;
+    font-size: var(--gf-font-size-sm);
+    font-weight: 500;
+    color: white;
+    background: var(--gf-primary-color);
+    border: none;
+    border-radius: var(--gf-radius-sm);
+    cursor: pointer;
+    transition: all var(--gf-transition-fast);
+    box-shadow: var(--gf-shadow-xs);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.gform_wrapper .gform_button:hover,
+.gform_wrapper .gform_next_button:hover,
+.gform_wrapper input[type="submit"]:hover {
+    background: var(--gf-primary-hover);
+    box-shadow: var(--gf-shadow-sm);
+}
+
+.gform_wrapper .gform_button:active,
+.gform_wrapper .gform_next_button:active,
+.gform_wrapper input[type="submit"]:active {
+    background: var(--gf-primary-dark);
+}
+
+.gform_wrapper .gform_button:focus-visible,
+.gform_wrapper .gform_next_button:focus-visible,
+.gform_wrapper input[type="submit"]:focus-visible {
+    outline: 2px solid var(--gf-primary-color);
+    outline-offset: 2px;
+}
+
+/* Previous Button (Secondary Style) */
+.gform_wrapper .gform_previous_button {
+    background: var(--gf-bg-primary);
+    color: var(--gf-text-secondary);
+    border: 1px solid var(--gf-border-default);
+    box-shadow: var(--gf-shadow-xs);
+}
+
+.gform_wrapper .gform_previous_button:hover {
+    background: var(--gf-bg-secondary);
+    color: var(--gf-text-primary);
+    border-color: var(--gf-border-medium);
+}
+
+.gform_wrapper .gform_previous_button:active {
+    background: var(--gf-bg-tertiary);
+}
+
+/* Button Container */
+.gform_wrapper .gform_footer,
+.gform_wrapper .gform_page_footer {
+    margin-top: var(--gf-spacing-xl);
+    padding-top: 0;
+    border-top: none;
+    display: flex;
+    gap: var(--gf-spacing-sm);
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.gform_wrapper .gform_footer input[type="submit"],
+.gform_wrapper .gform_page_footer input[type="submit"],
+.gform_wrapper .gform_footer .gform_button,
+.gform_wrapper .gform_page_footer .gform_button {
+    width: auto;
+}
+
+/* ============================================
+   Custom Price Calculator Field
+   ============================================ */
+
+/* Text Display Mode */
+.gform_wrapper .ginput_container_price_text {
+    margin: 0;
+}
+
+.gform_wrapper .gf-calculated-price {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--gf-spacing-xs);
+    padding: 0;
+    background: transparent;
+    color: var(--gf-text-secondary);
+    border: none;
+    font-weight: 500;
+    font-size: var(--gf-font-size-sm);
+}
+
+.gform_wrapper .gf-calculated-price strong {
+    font-size: var(--gf-font-size-xl);
+    font-weight: 600;
+    color: var(--gf-text-primary);
+}
+
+/* Size Variants */
+.gform_wrapper .gf-price-display-small .gf-calculated-price strong {
+    font-size: var(--gf-font-size-base);
+}
+
+.gform_wrapper .gf-price-display-medium .gf-calculated-price strong {
+    font-size: var(--gf-font-size-xl);
+}
+
+.gform_wrapper .gf-price-display-large .gf-calculated-price strong {
+    font-size: var(--gf-font-size-2xl);
+}
+
+/* Input Display Mode (Readonly) */
+.gform_wrapper .ginput_container_number input[readonly] {
+    background: var(--gf-bg-secondary);
+    color: var(--gf-primary-color);
+    font-weight: 600;
+    font-size: var(--gf-font-size-base);
+    cursor: default;
+    text-align: left;
+}
+
+/* ============================================
+   Validation & Errors
+   ============================================ */
+
+.gform_wrapper .gfield_error {
+    padding: 0;
+    background: transparent;
+}
+
+.gform_wrapper .gfield_error .gfield_label {
+    color: var(--gf-border-error);
+}
+
+.gform_wrapper .gfield_error input,
+.gform_wrapper .gfield_error textarea,
+.gform_wrapper .gfield_error select {
+    border-color: var(--gf-border-error);
+}
+
+.gform_wrapper .validation_message {
+    color: var(--gf-border-error);
+    font-size: var(--gf-font-size-xs);
+    margin-top: var(--gf-spacing-xs);
+    font-weight: 500;
+}
+
+.gform_wrapper .validation_error {
+    background: #fef2f2;
+    color: var(--gf-border-error);
+    padding: var(--gf-spacing-md);
+    border: 1px solid var(--gf-border-error);
+    border-radius: var(--gf-radius-md);
+    margin-bottom: var(--gf-spacing-lg);
+    font-size: var(--gf-font-size-sm);
+    font-weight: 500;
+}
+
+/* ============================================
+   Confirmation Message
+   ============================================ */
+
+.gform_confirmation_wrapper {
+    background: #ecfdf5;
+    border: 1px solid var(--gf-accent-color);
+    padding: var(--gf-spacing-lg);
+    border-radius: var(--gf-radius-md);
+    margin: var(--gf-spacing-lg) 0;
+}
+
+.gform_confirmation_message {
+    color: #065f46;
+    font-size: var(--gf-font-size-base);
+    line-height: var(--gf-leading-normal);
+    font-weight: 500;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .gform_wrapper .gform_body {
+        gap: var(--gf-spacing-md);
+    }
+
+    .gform_wrapper .gfield_image_choice_wrapper {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: var(--gf-spacing-sm);
+    }
+
+    .gform_wrapper .gf_page_steps {
+        flex-wrap: wrap;
+    }
+
+    .gform_wrapper .gform_page_footer {
+        flex-direction: column;
+        gap: var(--gf-spacing-sm);
+    }
+
+    .gform_wrapper .gform_page_footer .gform_button,
+    .gform_wrapper .gform_page_footer .gform_next_button,
+    .gform_wrapper .gform_page_footer .gform_previous_button {
+        width: 100%;
+    }
+
+    /* Keep final submit button auto width */
+    .gform_wrapper .gform_footer {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .gform_wrapper .gf_step_label {
+        display: none;
+    }
+
+    .gform_wrapper .gfield_image_choice_wrapper {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/* Focus visible for accessibility */
+.gform_wrapper *:focus-visible {
+    outline: 2px solid var(--gf-primary-color);
+    outline-offset: 2px;
+}
+
+/* Hidden fields */
+.gform_wrapper .gfield_visibility_hidden {
+    display: none;
+}
+
+/* Loading state */
+.gform_wrapper .gform_ajax_spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--gf-border-light);
+    border-top-color: var(--gf-primary-color);
+    border-radius: var(--gf-radius-full);
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Price Calculator - Stacked Badge Style
+   ============================================ */
+
+/* Stack container */
+.gf-price-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 12px 0;
+}
+
+/* Individual price rows */
+.gf-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+/* "Normal Price" row */
+.gf-price-was {
+    background: #fff;
+    border: 1px solid #dee2e6;
+}
+
+.gf-price-was .gf-price-label {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gf-price-was .gf-price-amount {
+    font-size: 18px;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+/* "Your Price" row */
+.gf-price-now {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.gf-price-now .gf-price-label {
+    font-size: 14px;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gf-price-now .gf-price-amount {
+    font-size: 28px;
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Savings badge */
+.gf-savings-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    border-radius: 20px;
+    align-self: center;
+    box-shadow: 0 2px 6px rgba(255, 193, 7, 0.4);
+}
+
+.gf-savings-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Regular price only (no sale) */
+.gf-price-regular-only .gf-final-price {
+    display: inline-block;
+    font-size: 32px;
+    color: var(--gf-primary-color);
+    font-weight: 700;
+    padding: 12px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .gf-price-row {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .gf-price-now .gf-price-amount {
+        font-size: 24px;
+    }
+
+    .gf-price-regular-only .gf-final-price {
+        font-size: 28px;
+    }
+}

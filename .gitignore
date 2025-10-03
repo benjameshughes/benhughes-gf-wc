@@ -1,0 +1,36 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+debug.log
+
+# Build artifacts
+*.zip
+/dist/
+/build/
+
+# Composer
+composer.phar
+composer.lock
+
+# Testing
+/tests/coverage/
+.phpunit.result.cache
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~

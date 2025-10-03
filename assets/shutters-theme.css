@@ -1,0 +1,505 @@
+/**
+ * Shutters Clean Theme
+ *
+ * A modern, minimal theme for Gravity Forms that works WITH the framework
+ * Uses GF's CSS custom properties for easy customization
+ *
+ * @package BenHughes\GravityFormsWC
+ * @since   2.0.0
+ */
+
+/* ============================================
+   Form Layout Enhancements
+   ============================================ */
+
+.gform_wrapper .gform_body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gf-field-spacing, 1.5rem);
+}
+
+.gform_wrapper .gfield {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================
+   Price Calculator - Stacked Badge Style
+   ============================================ */
+
+.gform_wrapper .gf-calculated-price {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    flex-wrap: wrap;
+}
+
+/* Prefix/Suffix text */
+.gform_wrapper .gf-calculated-price .gf-price-prefix,
+.gform_wrapper .gf-calculated-price .gf-price-suffix {
+    font-size: 0.875rem;
+    color: var(--gf-description-color, #475569);
+    font-weight: 500;
+}
+
+/* Stack container */
+.gf-price-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 12px 0;
+}
+
+/* Individual price rows */
+.gf-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+/* "Normal Price" row */
+.gf-price-was {
+    background: #fff;
+    border: 1px solid #dee2e6;
+}
+
+.gf-price-was .gf-price-label {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gf-price-was .gf-price-amount {
+    font-size: 18px;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+/* "Your Price" row */
+.gf-price-now {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.gf-price-now .gf-price-label {
+    font-size: 14px;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gf-price-now .gf-price-amount {
+    font-size: 28px;
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Savings badge */
+.gf-savings-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    border-radius: 20px;
+    align-self: center;
+    box-shadow: 0 2px 6px rgba(255, 193, 7, 0.4);
+}
+
+.gf-savings-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Regular price only (no sale) */
+.gf-price-regular-only .gf-final-price {
+    display: inline-block;
+    font-size: 32px;
+    color: var(--gf-color-primary, #3b82f6);
+    font-weight: 700;
+    padding: 12px 0;
+}
+
+/* Calculation breakdown - subtle info */
+.gform_wrapper .gf-calculated-price .gf-calculation-breakdown {
+    font-size: 0.75rem;
+    color: var(--gf-description-color, #64748b);
+    font-weight: 400;
+    font-style: italic;
+    margin-left: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .gf-price-row {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .gf-price-now .gf-price-amount {
+        font-size: 24px;
+    }
+
+    .gf-price-regular-only .gf-final-price {
+        font-size: 28px;
+    }
+}
+
+/* ============================================
+   Image Choices - Clean Grid Layout
+   ============================================ */
+
+.gform_wrapper .ginput_container_image_choice {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.gform_wrapper .gfield_image_choice {
+    position: relative;
+    border: 2px solid var(--gf-ctrl-border-color, #e2e8f0);
+    border-radius: var(--gf-ctrl-border-radius, 0.5rem);
+    overflow: hidden;
+    transition: all var(--gf-transition-duration, 150ms) var(--gf-transition-timing, ease);
+    cursor: pointer;
+}
+
+.gform_wrapper .gfield_image_choice:hover {
+    border-color: var(--gf-ctrl-border-color-focus, #3b82f6);
+    box-shadow: var(--gf-ctrl-box-shadow-focus, 0 0 0 3px rgba(59, 130, 246, 0.1));
+}
+
+.gform_wrapper .gfield_image_choice input:checked + label {
+    border-color: var(--gf-color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.gform_wrapper .gfield_image_choice img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.gform_wrapper .gfield_image_choice label {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    text-align: center;
+    font-weight: 500;
+    color: var(--gf-label-color, #0f172a);
+}
+
+/* ============================================
+   Multi-Step Progress Bar
+   ============================================ */
+
+.gform_wrapper .gf_progressbar_wrapper {
+    margin-bottom: 2rem;
+}
+
+.gform_wrapper .gf_progressbar {
+    background: var(--gf-progressbar-bg-color, #f1f5f9);
+    border-radius: var(--gf-progressbar-border-radius, 9999px);
+    height: var(--gf-progressbar-height, 0.5rem);
+    overflow: hidden;
+}
+
+.gform_wrapper .gf_progressbar_percentage {
+    background: var(--gf-progressbar-fill-color, #3b82f6);
+    height: 100%;
+    transition: width 300ms ease;
+}
+
+/* Step indicators */
+.gform_wrapper .gf_step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--gf-ctrl-border-color, #e2e8f0);
+    color: var(--gf-description-color, #475569);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.gform_wrapper .gf_step_active {
+    background: var(--gf-color-primary, #3b82f6);
+    color: var(--gf-color-primary-contrast, #ffffff);
+}
+
+.gform_wrapper .gf_step_completed {
+    background: var(--gf-validation-success-color, #10b981);
+    color: white;
+}
+
+/* ============================================
+   Form Footer (Buttons)
+   ============================================ */
+
+.gform_wrapper .gform_footer,
+.gform_wrapper .gform_page_footer {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+/* Ensure submit button doesn't stretch full width */
+.gform_wrapper .gform_footer input[type="submit"],
+.gform_wrapper .gform_footer button[type="submit"] {
+    width: auto;
+    min-width: 150px;
+}
+
+/* Previous button styling */
+.gform_wrapper .gform_previous_button {
+    background: transparent;
+    color: var(--gf-description-color, #475569);
+    border: 1px solid var(--gf-ctrl-border-color, #e2e8f0);
+}
+
+.gform_wrapper .gform_previous_button:hover {
+    background: var(--gf-ctrl-bg-color, #ffffff);
+    border-color: var(--gf-ctrl-border-color-focus, #3b82f6);
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 640px) {
+    .ginput_container_image_choice {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .gform_wrapper .gform_footer,
+    .gform_wrapper .gform_page_footer {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .gform_wrapper .gform_footer input,
+    .gform_wrapper .gform_footer button {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   Accessibility Improvements
+   ============================================ */
+
+.gform_wrapper *:focus-visible {
+    outline: 2px solid var(--gf-ctrl-border-color-focus, #3b82f6);
+    outline-offset: 2px;
+}
+
+.gform_wrapper input[type="checkbox"]:focus-visible,
+.gform_wrapper input[type="radio"]:focus-visible {
+    outline-offset: 0;
+}
+
+/* Screen reader only text */
+.gform_wrapper .gform_screen_reader {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================
+   Dual Submit Buttons
+   ============================================ */
+
+.gf-wc-dual-submit {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.gf-wc-dual-submit .gf-wc-button-primary {
+    background: var(--gf-button-bg-color, #3b82f6);
+    color: var(--gf-button-color, #ffffff);
+    order: 2;
+}
+
+.gf-wc-dual-submit .gf-wc-button-primary:hover {
+    background: var(--gf-button-bg-color-hover, #2563eb);
+}
+
+.gf-wc-dual-submit .gf-wc-button-secondary {
+    background: transparent;
+    color: var(--gf-color-primary, #3b82f6);
+    border: 1px solid var(--gf-ctrl-border-color, #e2e8f0);
+    order: 1;
+}
+
+.gf-wc-dual-submit .gf-wc-button-secondary:hover {
+    background: var(--gf-color-primary-lighter, #eff6ff);
+    border-color: var(--gf-color-primary, #3b82f6);
+}
+
+.gf-wc-cart-info {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--gf-description-color, #475569);
+}
+
+.gf-wc-cart-info a {
+    color: var(--gf-color-primary, #3b82f6);
+    text-decoration: none;
+}
+
+.gf-wc-cart-info a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   Confirmation Messages
+   ============================================ */
+
+.gf-wc-cart-message {
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--gf-ctrl-border-radius, 0.5rem);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-left: 4px solid;
+}
+
+.gf-wc-cart-message--success {
+    background: #d1fae5;
+    border-color: var(--gf-validation-success-color, #10b981);
+    color: #065f46;
+}
+
+.gf-wc-cart-message--error {
+    background: #fee2e2;
+    border-color: var(--gf-validation-error-color, #ef4444);
+    color: #991b1b;
+}
+
+/* ============================================
+   Quantity Selector
+   ============================================ */
+
+.gf-wc-quantity-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-right: auto;
+}
+
+.gf-wc-quantity-wrapper label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gf-label-color, #0f172a);
+    margin: 0;
+}
+
+.gf-wc-quantity {
+    width: 80px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gf-ctrl-border-color, #e2e8f0);
+    border-radius: var(--gf-ctrl-border-radius, 0.5rem);
+    font-size: 1rem;
+    text-align: center;
+    background: var(--gf-ctrl-bg-color, #ffffff);
+}
+
+.gf-wc-quantity:focus {
+    outline: none;
+    border-color: var(--gf-ctrl-border-color-focus, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ============================================
+   Button Variants
+   ============================================ */
+
+.gf-wc-dual-submit .gf-wc-button-add {
+    background: var(--gf-button-bg-color, #3b82f6);
+    color: var(--gf-button-color, #ffffff);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.gf-wc-dual-submit .gf-wc-button-add:hover {
+    background: var(--gf-button-bg-color-hover, #2563eb);
+}
+
+.gf-wc-dual-submit .gf-wc-button-primary {
+    background: var(--gf-button-bg-color, #3b82f6);
+    color: var(--gf-button-color, #ffffff);
+    order: 2;
+    font-weight: 600;
+}
+
+.gf-wc-dual-submit .gf-wc-button-primary:hover {
+    background: var(--gf-button-bg-color-hover, #2563eb);
+}
+
+.gf-wc-dual-submit .gf-wc-button-secondary {
+    background: transparent;
+    color: var(--gf-color-primary, #3b82f6);
+    border: 1px solid var(--gf-ctrl-border-color, #e2e8f0);
+    order: 1;
+    font-weight: 500;
+}
+
+.gf-wc-dual-submit .gf-wc-button-secondary:hover {
+    background: var(--gf-color-primary-lighter, #eff6ff);
+    border-color: var(--gf-color-primary, #3b82f6);
+}
+
+/* Responsive dual buttons */
+@media (max-width: 640px) {
+    .gf-wc-dual-submit {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .gf-wc-quantity-wrapper {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .gf-wc-quantity {
+        flex: 0 0 100px;
+    }
+
+    .gf-wc-dual-submit button {
+        width: 100%;
+    }
+
+    .gf-wc-dual-submit .gf-wc-button-primary {
+        order: 1;
+    }
+
+    .gf-wc-dual-submit .gf-wc-button-secondary {
+        order: 2;
+    }
+}
