@@ -17,10 +17,14 @@ use BenHughes\GravityFormsWC\Admin\FieldSettings;
 use BenHughes\GravityFormsWC\Admin\SettingsPage;
 use BenHughes\GravityFormsWC\API\CalculatorController;
 use BenHughes\GravityFormsWC\Assets\AssetManager;
+use BenHughes\GravityFormsWC\Cache\CacheInterface;
+use BenHughes\GravityFormsWC\Cache\WordPressCache;
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
 use BenHughes\GravityFormsWC\Events\EventDispatcher;
 use BenHughes\GravityFormsWC\Integration\WooCommerceCart;
 use BenHughes\GravityFormsWC\Logging\Logger;
+use BenHughes\GravityFormsWC\Repositories\CachedFormRepository;
+use BenHughes\GravityFormsWC\Repositories\CachedProductRepository;
 use BenHughes\GravityFormsWC\Repositories\FormRepositoryInterface;
 use BenHughes\GravityFormsWC\Repositories\GravityFormsRepository;
 use BenHughes\GravityFormsWC\Repositories\ProductRepositoryInterface;
@@ -88,16 +92,24 @@ class ServiceProvider {
 	 * @return void
 	 */
 	private function registerRepositories(): void {
-		// Form repository
+		// Form repository with caching decorator
 		$this->container->register(
 			FormRepositoryInterface::class,
-			fn() => new GravityFormsRepository()
+			fn( Container $c ) => new CachedFormRepository(
+				new GravityFormsRepository(),
+				$c->get( CacheInterface::class ),
+				3600 // 1 hour cache
+			)
 		);
 
-		// Product repository
+		// Product repository with caching decorator
 		$this->container->register(
 			ProductRepositoryInterface::class,
-			fn() => new WooCommerceProductRepository()
+			fn( Container $c ) => new CachedProductRepository(
+				new WooCommerceProductRepository(),
+				$c->get( CacheInterface::class ),
+				3600 // 1 hour cache
+			)
 		);
 	}
 
@@ -107,6 +119,12 @@ class ServiceProvider {
 	 * @return void
 	 */
 	private function registerCoreServices(): void {
+		// Cache (singleton)
+		$this->container->register(
+			CacheInterface::class,
+			fn() => new WordPressCache( 'gf-wc' )
+		);
+
 		// Logger (singleton)
 		$this->container->register(
 			Logger::class,
