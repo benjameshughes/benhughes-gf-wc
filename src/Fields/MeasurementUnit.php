@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace BenHughes\GravityFormsWC\Fields;
 
+use BenHughes\GravityFormsWC\Enums\MeasurementUnit as MeasurementUnitEnum;
 use GF_Field_Radio;
 
 /**
@@ -57,26 +58,12 @@ class MeasurementUnit extends GF_Field_Radio {
 	/**
 	 * Get default choices for measurement units
 	 *
+	 * Uses the MeasurementUnit enum for single source of truth
+	 *
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function get_default_choices(): array {
-		return [
-			[
-				'text'       => esc_html__( 'Millimeters (mm)', 'gf-wc-bridge' ),
-				'value'      => 'mm',
-				'isSelected' => false,
-			],
-			[
-				'text'       => esc_html__( 'Centimeters (cm)', 'gf-wc-bridge' ),
-				'value'      => 'cm',
-				'isSelected' => true,
-			],
-			[
-				'text'       => esc_html__( 'Inches (in)', 'gf-wc-bridge' ),
-				'value'      => 'in',
-				'isSelected' => false,
-			],
-		];
+		return MeasurementUnitEnum::choices();
 	}
 
 	/**
@@ -113,10 +100,12 @@ class MeasurementUnit extends GF_Field_Radio {
 	/**
 	 * Get default value for the field
 	 *
+	 * Uses the MeasurementUnit enum default
+	 *
 	 * @return string
 	 */
 	public function get_value_default(): string {
-		return 'cm';
+		return MeasurementUnitEnum::default()->value;
 	}
 
 	/**
@@ -227,20 +216,23 @@ class MeasurementUnit extends GF_Field_Radio {
 	/**
 	 * Validate that submitted value is one of the allowed units
 	 *
+	 * Uses MeasurementUnit enum for validation
+	 *
 	 * @param string|array $value Submitted field value.
 	 * @param array        $form  Form object.
 	 * @return void
 	 */
 	public function validate( $value, $form ): void {
-		// Ensure value is one of: mm, cm, in
-		$allowed_units = [ 'mm', 'cm', 'in' ];
-
 		if ( $this->isRequired && empty( $value ) ) {
 			$this->failed_validation  = true;
 			$this->validation_message = empty( $this->errorMessage )
 				? esc_html__( 'Please select a measurement unit.', 'gf-wc-bridge' )
 				: $this->errorMessage;
-		} elseif ( ! empty( $value ) && ! in_array( $value, $allowed_units, true ) ) {
+			return;
+		}
+
+		// Validate using enum - tryFrom returns null if invalid
+		if ( ! empty( $value ) && null === MeasurementUnitEnum::tryFrom( $value ) ) {
 			$this->failed_validation  = true;
 			$this->validation_message = esc_html__( 'Invalid measurement unit selected.', 'gf-wc-bridge' );
 		}
