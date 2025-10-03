@@ -10,17 +10,10 @@ declare(strict_types=1);
 
 namespace BenHughes\GravityFormsWC;
 
-use BenHughes\GravityFormsWC\Admin\AdminNotices;
-use BenHughes\GravityFormsWC\Admin\AdminToolbar;
-use BenHughes\GravityFormsWC\Admin\EditorScript;
-use BenHughes\GravityFormsWC\Admin\FieldSettings;
-use BenHughes\GravityFormsWC\Admin\SettingsPage;
-use BenHughes\GravityFormsWC\Assets\AssetManager;
+use BenHughes\GravityFormsWC\Container\Container;
+use BenHughes\GravityFormsWC\Container\ServiceProvider;
 use BenHughes\GravityFormsWC\Fields\MeasurementUnit;
 use BenHughes\GravityFormsWC\Fields\PriceCalculator;
-use BenHughes\GravityFormsWC\Integration\WooCommerceCart;
-use BenHughes\GravityFormsWC\Theme\ShuttersTheme;
-use BenHughes\GravityFormsWC\Validation\ConfigValidator;
 use GF_Fields;
 
 /**
@@ -48,6 +41,20 @@ class Plugin {
      * @var string
      */
     private string $plugin_url;
+
+    /**
+     * Dependency injection container
+     *
+     * @var Container
+     */
+    private Container $container;
+
+    /**
+     * Service provider
+     *
+     * @var ServiceProvider
+     */
+    private ServiceProvider $service_provider;
 
     /**
      * Singleton instance
@@ -82,6 +89,14 @@ class Plugin {
         $this->plugin_path = plugin_dir_path( $plugin_file );
         $this->plugin_url  = plugin_dir_url( $plugin_file );
 
+        // Initialize dependency injection container
+        $this->container        = new Container();
+        $this->service_provider = new ServiceProvider(
+            $this->container,
+            $this->plugin_url,
+            $this->version
+        );
+
         $this->init_hooks();
     }
 
@@ -115,33 +130,20 @@ class Plugin {
      * @return void
      */
     public function init_components(): void {
-        // Initialize validator (used by multiple components)
-        $validator = new ConfigValidator();
+        // Register all services in the container
+        $this->service_provider->register();
 
-        // Initialize Gravity Forms theme
-        new ShuttersTheme( $this->plugin_url, $this->version );
+        // Boot services (instantiate those that need to run immediately)
+        $this->service_provider->boot();
+    }
 
-        // Initialize admin components
-        if ( is_admin() ) {
-            new AdminNotices( $validator );
-            new SettingsPage( $validator );
-            new FieldSettings();
-            new EditorScript();
-        }
-
-        // Initialize admin toolbar (shows on both admin and frontend)
-        new AdminToolbar( $validator );
-
-        // Initialize WooCommerce integration
-        $cart_integration = null;
-        if ( class_exists( 'WooCommerce' ) ) {
-            $cart_integration = new WooCommerceCart();
-        }
-
-        // Initialize asset management (requires cart integration for JS)
-        if ( $cart_integration ) {
-            new AssetManager( $this->plugin_url, $this->version, $cart_integration );
-        }
+    /**
+     * Get dependency injection container
+     *
+     * @return Container
+     */
+    public function get_container(): Container {
+        return $this->container;
     }
 
     /**
