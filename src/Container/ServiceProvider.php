@@ -18,6 +18,7 @@ use BenHughes\GravityFormsWC\Admin\SettingsPage;
 use BenHughes\GravityFormsWC\API\CalculatorController;
 use BenHughes\GravityFormsWC\Assets\AssetManager;
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
+use BenHughes\GravityFormsWC\Events\EventDispatcher;
 use BenHughes\GravityFormsWC\Integration\WooCommerceCart;
 use BenHughes\GravityFormsWC\Repositories\FormRepositoryInterface;
 use BenHughes\GravityFormsWC\Repositories\GravityFormsRepository;
@@ -105,6 +106,12 @@ class ServiceProvider {
 	 * @return void
 	 */
 	private function registerCoreServices(): void {
+		// Event dispatcher (singleton)
+		$this->container->register(
+			EventDispatcher::class,
+			fn() => new EventDispatcher()
+		);
+
 		// Price calculator (no dependencies)
 		$this->container->register(
 			PriceCalculator::class,
