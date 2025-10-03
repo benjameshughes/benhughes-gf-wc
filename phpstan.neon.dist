@@ -1,0 +1,16 @@
+parameters:
+    level: 5
+    paths:
+        - src
+    excludePaths:
+        - src/Fields/*.php
+    ignoreErrors:
+        # WordPress functions
+        - '#Function (wp_|wc_|get_|add_|apply_|do_)#'
+        # Gravity Forms functions
+        - '#Function (rg|GFAPI|GF_)#'
+    scanDirectories:
+        - vendor
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    reportUnmatchedIgnoredErrors: false

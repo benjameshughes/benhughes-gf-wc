@@ -149,7 +149,10 @@ class CalculatorController extends WP_REST_Controller {
 	 * Calculate price endpoint handler
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response|WP_Error Response with calculation data or error.
+	 *
+	 * @throws ValidationException If dimensions are invalid.
+	 * @throws ProductNotFoundException If product doesn't exist.
 	 */
 	public function calculate_price( WP_REST_Request $request ) {
 		try {
@@ -237,7 +240,10 @@ class CalculatorController extends WP_REST_Controller {
 	 * Add to basket endpoint handler
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response|WP_Error Response with cart data or error.
+	 *
+	 * @throws ValidationException If dimensions are invalid.
+	 * @throws ProductNotFoundException If product doesn't exist.
 	 */
 	public function add_to_basket( WP_REST_Request $request ) {
 		try {
