@@ -12,6 +12,7 @@ namespace BenHughes\GravityFormsWC\Integration;
 
 use BenHughes\GravityFormsWC\Calculation\PriceCalculator;
 use BenHughes\GravityFormsWC\Enums\MeasurementUnit;
+use BenHughes\GravityFormsWC\Logging\Logger;
 use BenHughes\GravityFormsWC\Services\CartService;
 use GFFormDisplay;
 use WC;
@@ -57,14 +58,23 @@ class WooCommerceCart {
     private CartService $cart_service;
 
     /**
+     * Logger instance
+     *
+     * @var Logger
+     */
+    private Logger $logger;
+
+    /**
      * Initialize hooks
      *
      * @param PriceCalculator $calculator   Price calculator.
      * @param CartService     $cart_service Cart service.
+     * @param Logger          $logger       Logger instance.
      */
-    public function __construct( PriceCalculator $calculator, CartService $cart_service ) {
+    public function __construct( PriceCalculator $calculator, CartService $cart_service, Logger $logger ) {
         $this->calculator   = $calculator;
         $this->cart_service = $cart_service;
+        $this->logger       = $logger;
         // Dynamic form submission hooks - work with any form
         add_action( 'gform_after_submission', [ $this, 'add_to_cart' ], 10, 2 );
         add_filter( 'woocommerce_add_cart_item_data', [ $this, 'add_cart_item_data' ], 10, 4 );
@@ -140,9 +150,15 @@ class WooCommerceCart {
         $unit       = isset( $_POST['unit'] ) ? sanitize_text_field( wp_unslash( $_POST['unit'] ) ) : 'cm';
         $product_id = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : $this->product_id;
 
-        // Validate inputs
-        if ( $width <= 0 || $drop <= 0 ) {
-            wp_send_json_error( [ 'message' => 'Invalid dimensions' ] );
+        // Validate dimension bounds (prevent DoS with huge values)
+        if ( $width <= 0 || $width > 10000 || $drop <= 0 || $drop > 10000 ) {
+            wp_send_json_error( [ 'message' => __( 'Dimensions must be between 0 and 10000', 'gf-wc-bridge' ) ] );
+        }
+
+        // Validate product exists and is purchasable
+        $product = wc_get_product( $product_id );
+        if ( ! $product || ! $product->is_purchasable() ) {
+            wp_send_json_error( [ 'message' => __( 'Invalid product', 'gf-wc-bridge' ) ] );
         }
 
         // Calculate price using our centralized calculator
@@ -172,19 +188,19 @@ class WooCommerceCart {
 
         // Check if WooCommerce is active
         if ( ! class_exists( 'WooCommerce' ) ) {
-            error_log( 'GF-WC: AJAX add to basket failed - WooCommerce not active' );
+            $this->logger->error( 'AJAX add to basket failed - WooCommerce not active' );
             wp_send_json_error( [ 'message' => __( 'WooCommerce is not active', 'gf-wc-bridge' ) ] );
         }
 
-        // Get form data and sanitize
-        $form_data = isset( $_POST['form_data'] ) ? sanitize_text_field( wp_unslash( $_POST['form_data'] ) ) : '';
+        // Get form data - use wp_unslash only, sanitize individual values after parsing
+        $form_data = isset( $_POST['form_data'] ) ? wp_unslash( $_POST['form_data'] ) : '';
 
         if ( empty( $form_data ) ) {
-            error_log( 'GF-WC: AJAX add to basket failed - No form data provided' );
+            $this->logger->error( 'AJAX add to basket failed - No form data provided' );
             wp_send_json_error( [ 'message' => __( 'No form data provided', 'gf-wc-bridge' ) ] );
         }
 
-        // Parse form data
+        // Parse form data (sanitization happens per-field below)
         parse_str( $form_data, $parsed_data );
 
         // Get product and field IDs
@@ -195,25 +211,17 @@ class WooCommerceCart {
         $unit_field_id  = isset( $_POST['unit_field_id'] ) ? (int) $_POST['unit_field_id'] : 0;
         $quantity       = isset( $_POST['quantity'] ) ? max( 1, (int) $_POST['quantity'] ) : 1;
 
-        // Get measurement values
+        // Get measurement values (sanitize as appropriate type)
         $width_raw = isset( $parsed_data[ 'input_' . $width_field_id ] ) ? floatval( $parsed_data[ 'input_' . $width_field_id ] ) : 0;
         $drop_raw  = isset( $parsed_data[ 'input_' . $drop_field_id ] ) ? floatval( $parsed_data[ 'input_' . $drop_field_id ] ) : 0;
-        $unit      = $unit_field_id > 0 && isset( $parsed_data[ 'input_' . $unit_field_id ] ) ? $parsed_data[ 'input_' . $unit_field_id ] : 'cm';
+        $unit      = $unit_field_id > 0 && isset( $parsed_data[ 'input_' . $unit_field_id ] ) ? sanitize_text_field( $parsed_data[ 'input_' . $unit_field_id ] ) : 'cm';
 
         // Calculate using our centralized calculator (SINGLE SOURCE OF TRUTH)
         $unit_enum   = MeasurementUnit::tryFrom( $unit ) ?? MeasurementUnit::default();
         $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit_enum, $product_id );
 
         // Debug logging
-        error_log( sprintf(
-            'GF-WC AJAX: Calculating price - Width: %s%s, Drop: %s%s, Product: %d, Result: £%s',
-            $width_raw,
-            $unit,
-            $drop_raw,
-            $unit,
-            $product_id,
-            number_format( $calculation->price, 2 )
-        ) );
+        $this->logger->debug( "Calculating price - Width: {$width_raw}{$unit}, Drop: {$drop_raw}{$unit}, Product: {$product_id}, Result: £" . number_format( $calculation->price, 2 ) );
 
         // Get the frontend-submitted price for validation
         $frontend_price = $price_field_id && isset( $parsed_data[ 'input_' . $price_field_id ] )
@@ -223,24 +231,20 @@ class WooCommerceCart {
         // Security validation: Compare frontend vs backend price
         if ( $frontend_price > 0 && abs( $frontend_price - $calculation->price ) > 0.01 ) {
             // Price mismatch - frontend may have been tampered with
-            error_log( sprintf(
-                'GF-WC: Price mismatch detected. Frontend: £%s, Backend: £%s',
-                number_format( $frontend_price, 2 ),
-                number_format( $calculation->price, 2 )
-            ) );
+            $this->logger->warning( 'Price mismatch detected. Frontend: £' . number_format( $frontend_price, 2 ) . ', Backend: £' . number_format( $calculation->price, 2 ) );
         }
 
-        // Collect custom data
+        // Collect custom data (sanitize all user-supplied string values)
         $custom_data = [
-            'width'         => $width_raw . $unit,  // Display as entered (e.g., "60in")
-            'drop'          => $drop_raw . $unit,   // Display as entered (e.g., "72in")
-            'style'         => $this->get_parsed_value( $parsed_data, '31' ),
-            'louvre_size'   => $this->get_parsed_value( $parsed_data, '33' ),
-            'bar_type'      => $this->get_parsed_value( $parsed_data, '36' ),
-            'frame_type'    => $this->get_parsed_value( $parsed_data, '39' ),
-            'frame_options' => $this->get_parsed_value( $parsed_data, '41' ),
-            'position'      => $this->get_parsed_value( $parsed_data, '45' ),
-            'color'         => $this->get_parsed_value( $parsed_data, '49' ),
+            'width'         => sanitize_text_field( $width_raw . $unit ),  // Display as entered (e.g., "60in")
+            'drop'          => sanitize_text_field( $drop_raw . $unit ),   // Display as entered (e.g., "72in")
+            'style'         => sanitize_text_field( $this->get_parsed_value( $parsed_data, '31' ) ),
+            'louvre_size'   => sanitize_text_field( $this->get_parsed_value( $parsed_data, '33' ) ),
+            'bar_type'      => sanitize_text_field( $this->get_parsed_value( $parsed_data, '36' ) ),
+            'frame_type'    => sanitize_text_field( $this->get_parsed_value( $parsed_data, '39' ) ),
+            'frame_options' => sanitize_text_field( $this->get_parsed_value( $parsed_data, '41' ) ),
+            'position'      => sanitize_text_field( $this->get_parsed_value( $parsed_data, '45' ) ),
+            'color'         => sanitize_text_field( $this->get_parsed_value( $parsed_data, '49' ) ),
             // Hidden meta data for production (prefixed with _ to hide from customer)
             '_measurement_unit' => $unit,
             '_width_cm'         => number_format( $calculation->widthCm, 2, '.', '' ),
@@ -414,6 +418,16 @@ class WooCommerceCart {
             return;
         }
 
+        // DEPRECATION: Check if form has WooCommerce Cart feed configured
+        // If yes, skip this integration (feed handles it)
+        if ( $this->has_woocommerce_cart_feed( $form ) ) {
+            $this->logger->info(
+                'WooCommerceCart integration skipped - WooCommerce Cart feed is active',
+                [ 'form_id' => $form['id'] ]
+            );
+            return;
+        }
+
         // Find the price calculator field to get dynamic settings
         $price_calculator_field = null;
         foreach ( $form['fields'] as $field ) {
@@ -439,15 +453,12 @@ class WooCommerceCart {
         $calculation = $this->calculator->calculate( $width_raw, $drop_raw, $unit_enum, $product_id );
 
         // Debug logging
-        error_log( sprintf(
-            'GF-WC Form Submission: Calculating price - Width: %s%s, Drop: %s%s, Product: %d, Result: £%s',
-            $width_raw,
-            $unit,
-            $drop_raw,
-            $unit,
-            $product_id,
-            number_format( $calculation->price, 2 )
-        ) );
+        $this->logger->debug( 'Form submission price calculation', [
+            'width'      => $width_raw . $unit,
+            'drop'       => $drop_raw . $unit,
+            'product_id' => $product_id,
+            'price'      => number_format( $calculation->price, 2 ),
+        ] );
 
         // Collect shutter configuration data with actual field IDs from your form
         $custom_data = [
@@ -636,13 +647,12 @@ class WooCommerceCart {
         $price         = (float) $cart_item['gf_total'];
 
         // Debug logging
-        error_log( sprintf(
-            'GF-WC set_cart_item_price: regular=%s, sale=%s, final=%s, is_on_sale=%s',
-            number_format( $regular_price, 2 ),
-            number_format( $sale_price, 2 ),
-            number_format( $price, 2 ),
-            $is_on_sale ? 'yes' : 'no'
-        ) );
+        $this->logger->debug( 'Setting cart item price', [
+            'regular_price' => number_format( $regular_price, 2 ),
+            'sale_price'    => number_format( $sale_price, 2 ),
+            'final_price'   => number_format( $price, 2 ),
+            'is_on_sale'    => $is_on_sale,
+        ] );
 
         if ( $price > 0 ) {
             // Set prices on product to display strikethrough in cart
@@ -777,5 +787,34 @@ class WooCommerceCart {
                 }
             }
         }
+    }
+
+    /**
+     * Check if form has an active WooCommerce Cart feed
+     *
+     * @param array $form Form array.
+     * @return bool True if feed exists and is active.
+     */
+    private function has_woocommerce_cart_feed( array $form ): bool {
+        // Check if Gravity Forms Feed API is available
+        if ( ! class_exists( 'GFAPI' ) || ! method_exists( 'GFAPI', 'get_feeds' ) ) {
+            return false;
+        }
+
+        // Get all feeds for this form with slug 'gravityforms-woocommerce-cart'
+        $feeds = \GFAPI::get_feeds( null, $form['id'], 'gravityforms-woocommerce-cart' );
+
+        if ( empty( $feeds ) || is_wp_error( $feeds ) ) {
+            return false;
+        }
+
+        // Check if any feed is active
+        foreach ( $feeds as $feed ) {
+            if ( isset( $feed['is_active'] ) && $feed['is_active'] ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

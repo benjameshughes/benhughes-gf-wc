@@ -60,7 +60,7 @@
             const $quantityWrapper = $('<div></div>')
                 .addClass('gf-wc-quantity-wrapper')
                 .html(`
-                    <label for="gf-wc-quantity-${formId}">Quantity:</label>
+                    <label for="gf-wc-quantity-${formId}">${this.config.quantityLabel}</label>
                     <input type="number"
                            id="gf-wc-quantity-${formId}"
                            class="gf-wc-quantity"
@@ -74,7 +74,7 @@
             const $addToBasket = $('<button></button>')
                 .attr('type', 'button')
                 .addClass('gform_button gf-wc-button-add')
-                .html('🛒 Add to Basket')
+                .html(`🛒 ${this.config.addToBasketText}`)
                 .on('click', (e) => this.handleAddToBasket(e, $form));
 
             // Append quantity and button
@@ -107,7 +107,7 @@
             // Show loading state
             const $button = $(e.currentTarget);
             const originalText = $button.html();
-            $button.prop('disabled', true).html('⏳ Adding...');
+            $button.prop('disabled', true).html(this.config.addingText);
 
             // Get quantity value
             const quantity = parseInt($form.find('.gf-wc-quantity').val()) || 1;
@@ -159,13 +159,13 @@
                             }
                         }
                     } else {
-                        this.showMessage(response.data.message || 'Failed to add to cart', 'error');
+                        this.showMessage(response.data.message || this.config.errorAddToCart, 'error');
                         // Reset button on error
                         $button.prop('disabled', false).html(originalText);
                     }
                 },
-                error: (xhr, status, error) => {
-                    this.showMessage('Failed to add to cart. Please try again.', 'error');
+                error: (_xhr, _status, _error) => {
+                    this.showMessage(this.config.errorTryAgain, 'error');
                     // Reset button on error
                     $button.prop('disabled', false).html(originalText);
                 },
@@ -195,7 +195,6 @@
                 .html('➕ Add Another Configuration')
                 .on('click', (e) => {
                     e.preventDefault();
-                    console.log('Add Another clicked');
                     this.resetToInitialState($form);
                 });
 
@@ -217,8 +216,6 @@
          * Reset to initial state (reload page for fresh form)
          */
         resetToInitialState($form) {
-            console.log('resetToInitialState called');
-
             const formId = $form.attr('id').replace('gform_', '');
 
             // Clear Gravity Forms stored state from localStorage/sessionStorage
@@ -227,14 +224,12 @@
                 Object.keys(localStorage).forEach(key => {
                     if (key.includes('gform') || key.includes(`form_${formId}`)) {
                         localStorage.removeItem(key);
-                        console.log('Cleared localStorage:', key);
                     }
                 });
 
                 Object.keys(sessionStorage).forEach(key => {
                     if (key.includes('gform') || key.includes(`form_${formId}`)) {
                         sessionStorage.removeItem(key);
-                        console.log('Cleared sessionStorage:', key);
                     }
                 });
             } catch (e) {

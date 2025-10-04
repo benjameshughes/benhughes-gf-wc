@@ -105,6 +105,28 @@ class PriceCalculator extends GF_Field {
     public $currencySymbol = '£';
 
     /**
+     * Static flag to ensure filter is only registered once
+     *
+     * @var bool
+     */
+    private static $filter_registered = false;
+
+    /**
+     * Constructor - Set up filters
+     */
+    public function __construct( $data = [] ) {
+        parent::__construct( $data );
+
+        // Hook into GF field content filter to clean smart quotes
+        // Only register once per request to prevent multiple executions on multi-page forms
+        // Priority PHP_INT_MAX to run AFTER all other filters including texturize
+        if ( ! self::$filter_registered ) {
+            add_filter( 'gform_field_content', [ __CLASS__, 'clean_smart_quotes_from_output' ], PHP_INT_MAX, 5 );
+            self::$filter_registered = true;
+        }
+    }
+
+    /**
      * Get field title for form editor
      *
      * @return string
@@ -250,7 +272,7 @@ class PriceCalculator extends GF_Field {
         ob_start();
         ?>
         <div class="ginput_container ginput_container_price_text <?php echo esc_attr( $size_class ); ?>"
-             x-data="priceCalculator"
+             x-data='priceCalculator'
              data-form-id="<?php echo esc_attr( $form_id ); ?>"
              data-field-id="<?php echo esc_attr( $id ); ?>">
 
@@ -261,28 +283,28 @@ class PriceCalculator extends GF_Field {
                 <?php endif; ?>
 
                 <!-- Sale Price Display: Stacked with Badges -->
-                <div class="gf-price-stack" x-show="showRegularPrice">
+                <div class="gf-price-stack" x-show='showRegularPrice'>
                     <div class="gf-price-row gf-price-was">
                         <span class="gf-price-label">Normal Price</span>
                         <del class="gf-price-amount">
-                            <span class="gf-currency"><?php echo $currency; ?></span><span x-text="regularPrice">0.00</span>
+                            <span class="gf-currency"><?php echo $currency; ?></span><span x-text='regularPrice'>0.00</span>
                         </del>
                     </div>
                     <div class="gf-price-row gf-price-now">
                         <span class="gf-price-label gf-label-highlight">Your Price</span>
                         <strong class="gf-price-amount gf-price-highlight">
-                            <span class="gf-currency"><?php echo $currency; ?></span><span x-text="finalPrice">0.00</span>
+                            <span class="gf-currency"><?php echo $currency; ?></span><span x-text='finalPrice'>0.00</span>
                         </strong>
                     </div>
-                    <div class="gf-savings-badge" x-show="savingsPercent > 0">
-                        <span class="gf-savings-text">You Save <span x-text="savingsPercent">0</span>%!</span>
+                    <div class="gf-savings-badge" x-show='savingsPercent &gt; 0'>
+                        <span class="gf-savings-text">You Save <span x-text='savingsPercent'>0</span>%!</span>
                     </div>
                 </div>
 
                 <!-- Regular Price Display: No Sale -->
-                <div class="gf-price-regular-only" x-show="!showRegularPrice">
+                <div class="gf-price-regular-only" x-show='!showRegularPrice'>
                     <strong class="gf-final-price">
-                        <span class="gf-currency"><?php echo $currency; ?></span><span x-text="finalPrice">0.00</span>
+                        <span class="gf-currency"><?php echo $currency; ?></span><span x-text='finalPrice'>0.00</span>
                     </strong>
                 </div>
 
@@ -290,17 +312,54 @@ class PriceCalculator extends GF_Field {
                     <span class="gf-price-suffix"> <?php echo esc_html( $this->priceSuffix ); ?></span>
                 <?php endif; ?>
 
-                <span class="gf-calculation-breakdown" x-show="showCalculation" x-text="calculationText"></span>
+                <span class="gf-calculation-breakdown" x-show='showCalculation' x-text='calculationText'></span>
 
             </div>
 
             <input type="hidden"
                    name="input_<?php echo $id; ?>"
                    id="input_<?php echo $form_id; ?>_<?php echo $id; ?>"
-                   x-model="hiddenValue"
+                   x-model='hiddenValue'
                    data-currency="<?php echo esc_attr( $currency ); ?>" />
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Clean smart quotes from field output (GF filter hook)
+     *
+     * WordPress texturize converts straight quotes to smart quotes which breaks Alpine.js
+     *
+     * @param string $content      Field HTML content.
+     * @param object $field        Field object.
+     * @param string $value        Field value.
+     * @param int    $entry_id     Entry ID.
+     * @param int    $form_id      Form ID.
+     * @return string Cleaned content.
+     */
+    public static function clean_smart_quotes_from_output( string $content, object $field, string $value, int $entry_id, int $form_id ): string {
+        // Only process our Price Calculator fields
+        if ( $field->type !== 'wc_price_calculator' ) {
+            return $content;
+        }
+
+        // Replace ONLY smart punctuation with straight equivalents
+        // DO NOT decode HTML entities - &gt; must stay as &gt; for valid HTML
+        $replacements = [
+            "\xE2\x80\x9C" => '"',   // U+201C Left double quotation mark "
+            "\xE2\x80\x9D" => '"',   // U+201D Right double quotation mark "
+            "\xE2\x80\x98" => "'",   // U+2018 Left single quotation mark '
+            "\xE2\x80\x99" => "'",   // U+2019 Right single quotation mark '
+            "\xE2\x80\xB2" => "'",   // U+2032 Prime ′
+            "\xE2\x80\xB3" => '"',   // U+2033 Double prime ″
+            "\xC2\xAB"     => '"',   // U+00AB Left angle quote «
+            "\xC2\xBB"     => '"',   // U+00BB Right angle quote »
+            "\xE2\x80\x93" => '-',   // U+2013 En-dash –
+            "\xE2\x80\x94" => '-',   // U+2014 Em-dash —
+            "\xE2\x80\xA6" => '...', // U+2026 Ellipsis …
+        ];
+
+        return str_replace( array_keys( $replacements ), array_values( $replacements ), $content );
     }
 }

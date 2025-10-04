@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace BenHughes\GravityFormsWC\Container;
 
+use BenHughes\GravityFormsWC\Addons\WooCommerceFeedAddon;
 use BenHughes\GravityFormsWC\Admin\AdminNotices;
 use BenHughes\GravityFormsWC\Admin\AdminToolbar;
 use BenHughes\GravityFormsWC\Admin\EditorScript;
@@ -229,7 +230,8 @@ class ServiceProvider {
 				WooCommerceCart::class,
 				fn( Container $c ) => new WooCommerceCart(
 					$c->get( PriceCalculator::class ),
-					$c->get( CartService::class )
+					$c->get( CartService::class ),
+					$c->get( Logger::class )
 				)
 			);
 
@@ -241,6 +243,8 @@ class ServiceProvider {
 					$c->get( Logger::class )
 				)
 			);
+
+			// Feed-based addon registration deferred until gform_loaded
 
 			// Asset manager (requires cart integration)
 			$this->container->register(
@@ -285,6 +289,57 @@ class ServiceProvider {
 			add_action( 'rest_api_init', function () {
 				$this->container->get( CalculatorController::class )->register_routes();
 			} );
+
+			// Boot feed addon (requires GF addon framework)
+			if ( class_exists( 'GFForms' ) && class_exists( 'GFAddOn' ) ) {
+				$register_addon = function () {
+					// Manually load feed addon class if not available
+					if ( ! class_exists( 'GFFeedAddOn' ) ) {
+						$feed_addon_file = WP_PLUGIN_DIR . '/gravityforms/includes/addon/class-gf-feed-addon.php';
+						if ( file_exists( $feed_addon_file ) ) {
+							require_once $feed_addon_file;
+						} else {
+							// Silently fail - GFFeedAddOn not available
+							return;
+						}
+					}
+
+					if ( ! class_exists( 'GFFeedAddOn' ) ) {
+						// Silently fail - cannot register feed addon
+						return;
+					}
+
+					// Register feed description renderer
+					$this->container->register(
+						\BenHughes\GravityFormsWC\Admin\FeedDescriptionRenderer::class,
+						fn() => new \BenHughes\GravityFormsWC\Admin\FeedDescriptionRenderer()
+					);
+
+					// Register in container
+					$this->container->register(
+						WooCommerceFeedAddon::class,
+						fn( Container $c ) => new WooCommerceFeedAddon(
+							$c->get( CartService::class ),
+							$c->get( ProductRepositoryInterface::class ),
+							$c->get( \BenHughes\GravityFormsWC\Admin\FeedDescriptionRenderer::class ),
+							$c->get( Logger::class )
+						)
+					);
+
+					// Instantiate from container (sets singleton)
+					$this->container->get( WooCommerceFeedAddon::class );
+
+					// Register with Gravity Forms
+					\GFAddOn::register( WooCommerceFeedAddon::class );
+				};
+
+				// Use gform_loaded or run immediately if already fired
+				if ( did_action( 'gform_loaded' ) ) {
+					$register_addon();
+				} else {
+					add_action( 'gform_loaded', $register_addon, 5 );
+				}
+			}
 		}
 	}
 }

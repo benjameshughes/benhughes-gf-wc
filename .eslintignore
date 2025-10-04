@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+
+# WordPress core
+wp-admin/
+wp-includes/
+
+# Reports
+eslint-report.txt
+*.log

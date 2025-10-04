@@ -28,9 +28,9 @@ document.addEventListener('alpine:init', () => {
                 // Convert string values from PHP to proper types
                 this.config.regularPrice = parseFloat(this.config.regularPrice) || 0;
                 this.config.salePrice = parseFloat(this.config.salePrice) || 0;
-                this.config.isOnSale = this.config.isOnSale === "1" || this.config.isOnSale === true;
-                this.config.showSaleComparison = this.config.showSaleComparison === "1" || this.config.showSaleComparison === true;
-                this.config.showCalculation = this.config.showCalculation === "1" || this.config.showCalculation === true;
+                this.config.isOnSale = this.config.isOnSale === '1' || this.config.isOnSale === true;
+                this.config.showSaleComparison = this.config.showSaleComparison === '1' || this.config.showSaleComparison === true;
+                this.config.showCalculation = this.config.showCalculation === '1' || this.config.showCalculation === true;
                 this.config.unitFieldId = parseInt(this.config.unitFieldId) || 0;
 
                 // Set up listeners for width and drop fields after a brief delay
@@ -78,7 +78,7 @@ document.addEventListener('alpine:init', () => {
             },
 
             calculate() {
-                const { formId, widthFieldId, dropFieldId, productId, regularPrice, salePrice, isOnSale, showSaleComparison, showCalculation } = this.config;
+                const { formId, widthFieldId, dropFieldId, productId, isOnSale, showSaleComparison, showCalculation } = this.config;
 
                 // Get width and drop input fields
                 const widthInput = document.querySelector(`#input_${formId}_${widthFieldId}`);
@@ -107,34 +107,34 @@ document.addEventListener('alpine:init', () => {
                         product_id: productId
                     })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const price = parseFloat(data.data.price);
-                        const regularPriceCalc = parseFloat(data.data.regular_price);
-                        const salePriceCalc = parseFloat(data.data.sale_price);
-                        const area = parseFloat(data.data.area);
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const price = parseFloat(data.data.price);
+                            const regularPriceCalc = parseFloat(data.data.regular_price);
+                            const salePriceCalc = parseFloat(data.data.sale_price);
+                            const area = parseFloat(data.data.area);
 
-                        // Calculate savings percentage
-                        let savingsPercent = 0;
-                        if (regularPriceCalc > 0 && salePriceCalc > 0 && salePriceCalc < regularPriceCalc) {
-                            savingsPercent = Math.round(((regularPriceCalc - salePriceCalc) / regularPriceCalc) * 100);
+                            // Calculate savings percentage
+                            let savingsPercent = 0;
+                            if (regularPriceCalc > 0 && salePriceCalc > 0 && salePriceCalc < regularPriceCalc) {
+                                savingsPercent = Math.round(((regularPriceCalc - salePriceCalc) / regularPriceCalc) * 100);
+                            }
+
+                            // Update reactive state (template auto-updates via Alpine.js)
+                            this.finalPrice = price.toFixed(2);
+                            this.regularPrice = regularPriceCalc.toFixed(2);
+                            this.hiddenValue = price.toFixed(2);
+                            this.showRegularPrice = isOnSale && showSaleComparison;
+                            this.savingsPercent = savingsPercent;
+                            this.showCalculation = showCalculation;
+                            this.calculationText = showCalculation ? `(${widthRaw}${this.selectedUnit} × ${dropRaw}${this.selectedUnit} = ${area}m²)` : '';
                         }
-
-                        // Update reactive state (template auto-updates via Alpine.js)
-                        this.finalPrice = price.toFixed(2);
-                        this.regularPrice = regularPriceCalc.toFixed(2);
-                        this.hiddenValue = price.toFixed(2);
-                        this.showRegularPrice = isOnSale && showSaleComparison;
-                        this.savingsPercent = savingsPercent;
-                        this.showCalculation = showCalculation;
-                        this.calculationText = showCalculation ? `(${widthRaw}${this.selectedUnit} × ${dropRaw}${this.selectedUnit} = ${area}m²)` : '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Price calculation error:', error);
-                    this.clear();
-                });
+                    })
+                    .catch(error => {
+                        console.error('Price calculation error:', error);
+                        this.clear();
+                    });
             },
 
             clear() {

@@ -161,16 +161,25 @@
 }
 
 /* ============================================
-   Image Choices - Clean Grid Layout
+   Image Choices - Clean Grid Layout (GF 2.9+)
    ============================================ */
 
-.gform_wrapper .ginput_container_image_choice {
+/* Grid container for image choice fields */
+.gform_wrapper .image-choices-field .ginput_container_radio {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 1rem;
 }
 
-.gform_wrapper .gfield_image_choice {
+/* Remove list styling from choices */
+.gform_wrapper .image-choices-field .gfield_radio {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+/* Individual image choice styling */
+.gform_wrapper .image-choices-choice {
     position: relative;
     border: 2px solid var(--gf-ctrl-border-color, #e2e8f0);
     border-radius: var(--gf-ctrl-border-radius, 0.5rem);
@@ -179,23 +188,38 @@
     cursor: pointer;
 }
 
-.gform_wrapper .gfield_image_choice:hover {
+.gform_wrapper .image-choices-choice:hover {
     border-color: var(--gf-ctrl-border-color-focus, #3b82f6);
     box-shadow: var(--gf-ctrl-box-shadow-focus, 0 0 0 3px rgba(59, 130, 246, 0.1));
 }
 
-.gform_wrapper .gfield_image_choice input:checked + label {
+/* Checked state */
+.gform_wrapper .image-choices-choice input:checked + label {
+    border-color: var(--gf-color-primary, #3b82f6);
+}
+
+.gform_wrapper .image-choices-choice:has(input:checked) {
     border-color: var(--gf-color-primary, #3b82f6);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-.gform_wrapper .gfield_image_choice img {
+/* Image styling */
+.gform_wrapper .image-choices-choice-image {
     display: block;
     width: 100%;
     height: auto;
 }
 
-.gform_wrapper .gfield_image_choice label {
+/* Label styling */
+.gform_wrapper .image-choices-choice label {
+    display: block;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.gform_wrapper .image-choices-choice-text {
+    display: block;
     padding: 0.75rem;
     font-size: 0.75rem;
     text-align: center;
@@ -284,7 +308,7 @@
    ============================================ */
 
 @media (max-width: 640px) {
-    .ginput_container_image_choice {
+    .gform_wrapper .image-choices-field .ginput_container_radio {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 0.75rem;
     }

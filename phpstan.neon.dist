@@ -11,6 +11,4 @@ parameters:
         - '#Function (rg|GFAPI|GF_)#'
     scanDirectories:
         - vendor
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
     reportUnmatchedIgnoredErrors: false

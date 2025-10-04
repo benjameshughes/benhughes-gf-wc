@@ -220,11 +220,166 @@ $container->register(
 
 ## Code Style
 
+### Core Principles
+
 - **PHP 8.2+** features (enums, readonly, named arguments)
 - **Strict typing** (`declare(strict_types=1)`)
 - **WordPress Coding Standards**
 - **PSR-4 Autoloading**
 - **Comprehensive PHPDoc**
+- **SOLID** principles throughout
+- **DRY** (Don't Repeat Yourself)
+- **Strong OOP** (Object-Oriented Programming)
+
+### Mandatory Patterns
+
+#### 1. NO sprintf() - Use String Interpolation
+❌ **NEVER do this:**
+```php
+sprintf( 'Product ID %d not found', $product_id );
+sprintf( '%s (ID: %d)', $product->get_name(), $product_id );
+```
+
+✅ **ALWAYS do this:**
+```php
+__( "Product ID {$product_id} not found", 'text-domain' );
+"{$product->name()} (ID: {$product->id()})";
+```
+
+#### 2. Use Repository Pattern - NO Direct WP/WC Calls
+❌ **NEVER do this:**
+```php
+$product = wc_get_product( $product_id );
+$products = get_posts( [ 'post_type' => 'product' ] );
+```
+
+✅ **ALWAYS do this:**
+```php
+$product = $this->productRepository->find( $product_id ); // Returns WC_Product
+$products = $this->productRepository->getAll(); // Returns WC_Product[]
+
+// Then use WooCommerce methods:
+$product->get_name();
+$product->get_id();
+```
+
+#### 3. Value Objects for Data Transfer
+❌ **NEVER do this:**
+```php
+$product_id = (int) rgar( $feed['meta'], 'productId' );
+$quantity   = (int) rgar( $feed['meta'], 'quantity' );
+```
+
+✅ **ALWAYS do this:**
+```php
+$settings = FeedSettings::fromMeta( $feed['meta'] ?? [] );
+$product_id = $settings->productId;
+$quantity   = $settings->quantity;
+```
+
+#### 4. Enums for Constants
+❌ **NEVER do this:**
+```php
+'name' => 'feedName'
+'name' => 'productId'
+```
+
+✅ **ALWAYS do this:**
+```php
+'name' => FeedField::FEED_NAME->value
+'name' => FeedField::PRODUCT_ID->value
+```
+
+#### 5. Readonly Classes for Immutability
+✅ **Use readonly for value objects:**
+```php
+readonly class ProductChoice {
+    public function __construct(
+        public string $label,
+        public string $value,
+    ) {}
+}
+```
+
+#### 6. Named Arguments for Clarity
+✅ **Use named arguments in constructors:**
+```php
+return new self(
+    feedName: (string) ( $meta['feedName'] ?? '' ),
+    productId: (int) ( $meta['productId'] ?? 0 ),
+    quantity: max( 1, (int) ( $meta['quantity'] ?? 1 ) ),
+);
+```
+
+#### 7. Separate View Logic from Business Logic
+❌ **NEVER mix HTML in business logic:**
+```php
+public function render() {
+    return sprintf( '<div>%s</div>', $content ); // Wrong!
+}
+```
+
+✅ **ALWAYS use dedicated renderer classes:**
+```php
+class FeedDescriptionRenderer {
+    public function render(): string {
+        // All HTML generation isolated here
+    }
+}
+```
+
+#### 8. Type-Safe Method Signatures
+✅ **Always specify types:**
+```php
+private function determineProductId(
+    ?object $priceCalculatorField,
+    FeedSettings $settings
+): int {
+    // Implementation
+}
+```
+
+### File Organization
+
+```
+src/
+├── Enums/           # Type-safe constants
+│   ├── FeedField.php
+│   └── MeasurementUnit.php
+├── ValueObjects/    # Immutable data containers
+│   ├── FeedSettings.php
+│   ├── ProductChoice.php
+│   └── PriceCalculation.php
+├── Admin/           # View/rendering logic
+│   └── FeedDescriptionRenderer.php
+├── Services/        # Business logic
+│   └── CartService.php
+├── Repositories/    # Data access
+│   └── ProductRepositoryInterface.php
+└── Addons/          # Integration points
+    └── WooCommerceFeedAddon.php
+```
+
+### Dependency Injection
+
+✅ **Always inject dependencies via constructor:**
+```php
+public function __construct(
+    CartService $cart_service,
+    ProductRepositoryInterface $product_repository,
+    FeedDescriptionRenderer $description_renderer,
+    Logger $logger
+) {
+    $this->cart_service = $cart_service;
+    $this->product_repository = $product_repository;
+    $this->description_renderer = $description_renderer;
+    $this->logger = $logger;
+}
+```
+
+### Testing
+
+All code should be testable in isolation through dependency injection and interface contracts.
 
 ## Dependencies
 

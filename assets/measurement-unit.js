@@ -69,7 +69,9 @@ document.addEventListener('alpine:init', () => {
                 const widthLabel = document.querySelector(`#field_${this.formId}_${this.widthFieldId} .gfield_label`);
                 const dropLabel = document.querySelector(`#field_${this.formId}_${this.dropFieldId} .gfield_label`);
 
-                if (!widthLabel || !dropLabel) return;
+                if (!widthLabel || !dropLabel) {
+                    return;
+                }
 
                 // Store original labels if not already stored
                 if (!widthLabel.dataset.originalText) {
@@ -94,7 +96,9 @@ document.addEventListener('alpine:init', () => {
                 const widthInput = document.querySelector(`#input_${this.formId}_${this.widthFieldId}`);
                 const dropInput = document.querySelector(`#input_${this.formId}_${this.dropFieldId}`);
 
-                if (!widthInput || !dropInput) return;
+                if (!widthInput || !dropInput) {
+                    return;
+                }
 
                 // Get original max/min values (assuming they're in cm)
                 const widthMaxCm = parseFloat(widthInput.dataset.originalMax || widthInput.max || 300);
@@ -196,7 +200,9 @@ document.addEventListener('alpine:init', () => {
                 const widthInput = document.querySelector(`#input_${this.formId}_${this.widthFieldId}`);
                 const dropInput = document.querySelector(`#input_${this.formId}_${this.dropFieldId}`);
 
-                if (!widthInput || !dropInput) return;
+                if (!widthInput || !dropInput) {
+                    return;
+                }
 
                 // Base placeholder value in cm
                 const basePlaceholderCm = 100;

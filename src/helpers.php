@@ -21,7 +21,8 @@ if ( ! function_exists( 'gf_wc_container' ) ) {
 		static $container = null;
 
 		if ( null === $container ) {
-			$plugin    = Plugin::get_instance( __FILE__, '2.4.0' );
+			// Use constants from main plugin file for correct file path and version
+			$plugin    = Plugin::get_instance( BENHUGHES_GF_WC_FILE, BENHUGHES_GF_WC_VERSION );
 			$container = $plugin->get_container();
 		}
 

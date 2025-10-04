@@ -99,14 +99,34 @@ class AssetManager {
             $alpine_dependencies[] = 'gf-wc-measurement-unit';
         }
 
+        /**
+         * Filter Alpine.js source URL
+         *
+         * Allows self-hosting Alpine.js instead of using CDN.
+         *
+         * @since 2.3.0
+         *
+         * @param string $alpine_src Alpine.js script URL.
+         *
+         * @example
+         * // Self-host Alpine.js
+         * add_filter( 'gf_wc_alpine_src', function( $src ) {
+         *     return plugin_dir_url( __FILE__ ) . 'assets/vendor/alpinejs/cdn.min.js';
+         * } );
+         */
+        $alpine_src = apply_filters(
+            'gf_wc_alpine_src',
+            'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js'
+        );
+
         wp_enqueue_script(
             'alpinejs',
-            'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
+            $alpine_src,
             $alpine_dependencies,
             '3.x.x',
             true
         );
-        wp_script_add_data( 'alpinejs', 'defer', true );
+        // No defer needed - scripts load in footer with dependencies already set
 
         // Localize script with configuration and AJAX data
         wp_localize_script(
@@ -146,18 +166,22 @@ class AssetManager {
             'gf-wc-dual-submit',
             'gfWcDualSubmit',
             [
-                'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-                'nonce'            => wp_create_nonce( 'gf_wc_dual_submit' ),
-                'formId'           => $config['formId'],
-                'priceFieldId'     => $config['priceFieldId'],
-                'widthFieldId'     => $config['widthFieldId'],
-                'dropFieldId'      => $config['dropFieldId'],
-                'unitFieldId'      => $config['unitFieldId'] ?? 0,
-                'productId'        => $config['productId'],
-                'addToBasketText'  => __( 'Add to Basket', 'gf-wc-bridge' ),
-                'payNowText'       => __( 'Pay Now', 'gf-wc-bridge' ),
-                'cartCount'        => WC()->cart ? WC()->cart->get_cart_contents_count() : 0,
-                'cartUrl'          => wc_get_cart_url(),
+                'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
+                'nonce'             => wp_create_nonce( 'gf_wc_dual_submit' ),
+                'formId'            => $config['formId'],
+                'priceFieldId'      => $config['priceFieldId'],
+                'widthFieldId'      => $config['widthFieldId'],
+                'dropFieldId'       => $config['dropFieldId'],
+                'unitFieldId'       => $config['unitFieldId'] ?? 0,
+                'productId'         => $config['productId'],
+                'addToBasketText'   => __( 'Add to Basket', 'gf-wc-bridge' ),
+                'payNowText'        => __( 'Pay Now', 'gf-wc-bridge' ),
+                'quantityLabel'     => __( 'Quantity:', 'gf-wc-bridge' ),
+                'addingText'        => __( '⏳ Adding...', 'gf-wc-bridge' ),
+                'errorAddToCart'    => __( 'Failed to add to cart', 'gf-wc-bridge' ),
+                'errorTryAgain'     => __( 'Failed to add to cart. Please try again.', 'gf-wc-bridge' ),
+                'cartCount'         => WC()->cart ? WC()->cart->get_cart_contents_count() : 0,
+                'cartUrl'           => wc_get_cart_url(),
             ]
         );
 

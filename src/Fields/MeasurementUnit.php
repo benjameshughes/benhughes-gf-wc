@@ -43,6 +43,13 @@ class MeasurementUnit extends GF_Field_Radio {
 	public $dropFieldId = 0;
 
 	/**
+	 * Static flag to ensure filter is only registered once
+	 *
+	 * @var bool
+	 */
+	private static $filter_registered = false;
+
+	/**
 	 * Constructor
 	 *
 	 * Ensures choices are set on field instantiation
@@ -52,7 +59,11 @@ class MeasurementUnit extends GF_Field_Radio {
 		$this->ensure_choices();
 
 		// Add filter to inject Alpine attributes after field is fully rendered
-		add_filter( 'gform_field_content', [ $this, 'add_alpine_attributes' ], 10, 5 );
+		// Only register once per request to prevent multiple executions on multi-page forms
+		if ( ! self::$filter_registered ) {
+			add_filter( 'gform_field_content', [ __CLASS__, 'add_alpine_attributes' ], 10, 5 );
+			self::$filter_registered = true;
+		}
 	}
 
 	/**
@@ -154,14 +165,14 @@ class MeasurementUnit extends GF_Field_Radio {
 	 * @param int    $form_id  Form ID.
 	 * @return string Modified content with Alpine attributes.
 	 */
-	public function add_alpine_attributes( string $content, $field, $value, $entry_id, $form_id ): string {
+	public static function add_alpine_attributes( string $content, $field, $value, $entry_id, $form_id ): string {
 		// Only process this field type
 		if ( $field->type !== 'measurement_unit' ) {
 			return $content;
 		}
 
-		// Don't add in editor or entry detail
-		if ( $this->is_entry_detail() || $this->is_form_editor() ) {
+		// Don't add in editor or entry detail (check the field object, not instance)
+		if ( $field->is_entry_detail() || $field->is_form_editor() ) {
 			return $content;
 		}
 

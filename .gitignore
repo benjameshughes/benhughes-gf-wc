@@ -28,6 +28,10 @@ composer.lock
 # Testing
 /tests/coverage/
 .phpunit.result.cache
+eslint-report.txt
+
+# npm
+package-lock.json
 
 # Temporary files
 *.tmp
