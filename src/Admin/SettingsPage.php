@@ -313,21 +313,35 @@ class SettingsPage {
                 <a class="button" href="<?php echo esc_url( admin_url( 'site-health.php?tab=debug' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View in Site Health → Info', 'gf-wc-bridge' ); ?></a>
                 <button type="button" class="button" id="gf-wc-copy-diag"><?php esc_html_e( 'Copy diagnostics', 'gf-wc-bridge' ); ?></button>
                 <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_clear_confirmations' ), 'gf_wc_clear_confirmations' ) ); ?>"><?php esc_html_e( 'Clear confirmation messages', 'gf-wc-bridge' ); ?></a>
-                <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_check_updates' ), 'gf_wc_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'gf-wc-bridge' ); ?></a>
+                <a class="button button-secondary" id="gf-wc-check-updates" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_check_updates' ), 'gf_wc_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'gf-wc-bridge' ); ?></a>
             </p>
             <textarea id="gf-wc-diag-src" style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true"><?php echo esc_textarea( (string) $diag_json ); ?></textarea>
             <script>
                 (function(){
-                    const btn = document.getElementById('gf-wc-copy-diag');
-                    if (!btn) return;
-                    btn.addEventListener('click', function(){
-                        const ta = document.getElementById('gf-wc-diag-src');
-                        if (!ta) return;
-                        ta.select();
-                        ta.setSelectionRange(0, ta.value.length);
-                        try { document.execCommand('copy'); btn.textContent = '<?php echo esc_js( __( 'Copied!', 'gf-wc-bridge' ) ); ?>'; } catch(e) {}
-                        setTimeout(function(){ btn.textContent = '<?php echo esc_js( __( 'Copy diagnostics', 'gf-wc-bridge' ) ); ?>'; }, 2000);
-                    });
+                    // Copy diagnostics button
+                    const copyBtn = document.getElementById('gf-wc-copy-diag');
+                    if (copyBtn) {
+                        copyBtn.addEventListener('click', function(){
+                            const ta = document.getElementById('gf-wc-diag-src');
+                            if (!ta) return;
+                            ta.select();
+                            ta.setSelectionRange(0, ta.value.length);
+                            try { document.execCommand('copy'); copyBtn.textContent = '<?php echo esc_js( __( 'Copied!', 'gf-wc-bridge' ) ); ?>'; } catch(e) {}
+                            setTimeout(function(){ copyBtn.textContent = '<?php echo esc_js( __( 'Copy diagnostics', 'gf-wc-bridge' ) ); ?>'; }, 2000);
+                        });
+                    }
+
+                    // Add loading indicator to update check
+                    const updateBtn = document.getElementById('gf-wc-check-updates');
+                    if (updateBtn) {
+                        updateBtn.addEventListener('click', function(){
+                            if (updateBtn.dataset.loading === '1') return;
+                            updateBtn.dataset.loading = '1';
+                            updateBtn.classList.add('disabled');
+                            updateBtn.innerHTML = '<?php echo esc_js( __( 'Checking…', 'gf-wc-bridge' ) ); ?>' +
+                                ' <span class="spinner is-active" style="float:none;margin:0 0 -3px 6px;"></span>';
+                        });
+                    }
                 })();
             </script>
         </div>
@@ -685,7 +699,13 @@ class SettingsPage {
         if ( function_exists( 'wp_update_plugins' ) ) {
             wp_update_plugins();
         }
-        wp_safe_redirect( add_query_arg( [ 'page' => 'gf-wc-settings', 'updates_checked' => '1' ], admin_url( 'admin.php' ) ) );
+        // Redirect back to requested context
+        $return = isset( $_GET['return'] ) ? sanitize_text_field( wp_unslash( $_GET['return'] ) ) : '';
+        if ( 'plugins' === $return ) {
+            wp_safe_redirect( add_query_arg( [ 'gf_wc_updates_checked' => '1' ], admin_url( 'plugins.php' ) ) );
+        } else {
+            wp_safe_redirect( add_query_arg( [ 'page' => 'gf-wc-settings', 'updates_checked' => '1' ], admin_url( 'admin.php' ) ) );
+        }
         exit;
     }
 }
