@@ -2,7 +2,7 @@
 
 A WordPress plugin that seamlessly connects Gravity Forms with WooCommerce, enabling dynamic price calculations based on customer measurements and instant cart integration.
 
-**Version:** 2.3.4
+**Version:** 2.3.5
 **Author:** Ben Hughes
 **Requires:** WordPress 5.0+, PHP 8.2+
 **Dependencies:** Gravity Forms 2.5+, WooCommerce 5.0+, Alpine.js 3.x (auto-loaded)

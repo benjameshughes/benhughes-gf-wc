@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Gravity Forms to WooCommerce Cart
  * Description: Adds Gravity Forms submissions to WooCommerce cart with custom data for the shutter form
- * Version: 2.3.4
+ * Version: 2.3.5
  * Author: Ben Hughes
  * Requires at least: 5.0
  * Requires PHP: 8.2
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'BENHUGHES_GF_WC_VERSION', '2.3.4' );
+define( 'BENHUGHES_GF_WC_VERSION', '2.3.5' );
 define( 'BENHUGHES_GF_WC_FILE', __FILE__ );
 define( 'BENHUGHES_GF_WC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENHUGHES_GF_WC_URL', plugin_dir_url( __FILE__ ) );
@@ -81,7 +81,8 @@ add_filter(
         try {
             $target = plugin_basename( __FILE__ );
             if ( isset( $item->plugin ) && $item->plugin === $target ) {
-                return '1' === get_option( 'gf_wc_auto_update', '0' );
+                $opt_in = ( '1' === get_option( 'gf_wc_auto_update', '0' ) );
+                return (bool) ( $update || $opt_in );
             }
         } catch ( \Throwable $e ) {
             // Fail-safe: do not force updates on errors
@@ -111,9 +112,10 @@ add_action(
         if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ) ) {
             return;
         }
+        // Default to the public repo if none configured in settings
         $repo = trim( (string) get_option( 'gf_wc_github_repo', '' ) );
         if ( '' === $repo ) {
-            return;
+            $repo = 'https://github.com/benjameshughes/benhughes-gf-wc';
         }
 
         // Accept formats: user/repo or full https URL
@@ -134,7 +136,7 @@ add_action(
                 $api->enableReleaseAssets();
             }
 
-            // Private repo support via PAT stored in option
+            // Private repo support via PAT stored in option (not required for public repos)
             $token = trim( (string) get_option( 'gf_wc_github_token', '' ) );
             if ( '' !== $token && method_exists( $update_checker, 'setAuthentication' ) ) {
                 $update_checker->setAuthentication( $token );

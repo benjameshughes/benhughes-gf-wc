@@ -341,7 +341,7 @@ class SettingsPage {
                         <th scope="row"><label for="github_repo"><?php esc_html_e( 'GitHub Repository', 'gf-wc-bridge' ); ?></label></th>
                         <td>
                             <input type="text" class="regular-text" name="github_repo" id="github_repo" value="<?php echo esc_attr( $github_repo ); ?>" placeholder="user/repo or https://github.com/user/repo" />
-                            <p class="description"><?php esc_html_e( 'Used for update checks via GitHub Releases. Leave blank to disable.', 'gf-wc-bridge' ); ?></p>
+                            <p class="description"><?php esc_html_e( 'Used for update checks via GitHub Releases. Leave blank to use the default public repo (benjameshughes/benhughes-gf-wc).', 'gf-wc-bridge' ); ?></p>
                         </td>
                     </tr>
                     <tr>

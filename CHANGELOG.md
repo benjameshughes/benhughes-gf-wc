@@ -193,3 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Improve CI packaging step to avoid recursive copy; add manual trigger
 - Bump plugin version to 2.3.4
+## [2.3.5] - 2025-10-05
+
+### Changed
+- Bump plugin version to 2.3.5 (no functional changes)
