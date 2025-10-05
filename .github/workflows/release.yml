@@ -21,16 +21,19 @@ jobs:
 
       - name: Install Composer (no dev)
         run: composer install --no-dev --prefer-dist --no-progress
-        working-directory: wp-content/plugins/benhughes-gf-wc
+        working-directory: .
 
       - name: Optimize autoloader
         run: composer dump-autoload -o --no-dev
-        working-directory: wp-content/plugins/benhughes-gf-wc
+        working-directory: .
 
       - name: Build zip
         run: |
-          cd wp-content/plugins
           ZIP="benhughes-gf-wc-${GITHUB_REF_NAME}.zip"
+          mkdir -p build/benhughes-gf-wc
+          shopt -s dotglob
+          cp -R * build/benhughes-gf-wc/
+          cd build
           zip -r "$ZIP" benhughes-gf-wc \
             -x "benhughes-gf-wc/.git/*" \
             -x "benhughes-gf-wc/.git" \
@@ -49,8 +52,8 @@ jobs:
             -x "benhughes-gf-wc/.gitignore" \
             -x "benhughes-gf-wc/ROADMAP*.md" \
             -x "benhughes-gf-wc/MERGE-SUMMARY.md" \
-            -x "benhughes-gf-wc/PROJECT-STATUS.md" 
-          echo "ZIP_PATH=wp-content/plugins/$ZIP" >> $GITHUB_ENV
+            -x "benhughes-gf-wc/PROJECT-STATUS.md"
+          echo "ZIP_PATH=build/$ZIP" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -58,4 +61,3 @@ jobs:
           files: ${{ env.ZIP_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
