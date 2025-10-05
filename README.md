@@ -2,7 +2,7 @@
 
 A WordPress plugin that seamlessly connects Gravity Forms with WooCommerce, enabling dynamic price calculations based on customer measurements and instant cart integration.
 
-**Version:** 2.3.0
+**Version:** 2.3.1
 **Author:** Ben Hughes
 **Requires:** WordPress 5.0+, PHP 8.2+
 **Dependencies:** Gravity Forms 2.5+, WooCommerce 5.0+, Alpine.js 3.x (auto-loaded)
@@ -926,6 +926,21 @@ Custom styles for the price calculator field:
 - Proper namespacing and class organization
 
 ## Changelog
+
+### Version 2.3.1 (2025-10-04)
+- **Security Hardening**: All user input sanitized before cart/order storage (XSS prevention)
+- **CSRF Protection**: Disabled REST `/add-to-basket` endpoint, AJAX remains nonce-protected
+- **Alpine.js Expression Fix**: Removed `html_entity_decode()` breaking HTML attributes
+- **Smart Quote Handling**: Extended Unicode replacement map for proper quote conversion
+- **PSR-3 Logging**: Replaced all `error_log()` with structured Logger (respects `WP_DEBUG_LOG`)
+- **Input Sanitization Fix**: Moved `sanitize_text_field()` after `parse_str()` to preserve complex values
+- **Version Consistency**: Uses `BENHUGHES_GF_WC_VERSION` constant throughout
+- **Alpine CDN Filter**: Added `gf_wc_alpine_src` filter for self-hosting Alpine.js (CSP support)
+- **i18n Support**: All dual submit UI strings translatable via WordPress i18n
+- **GF 2.9 Compatibility**: Updated CSS for native image choice fields
+- **JavaScript Quality**: ESLint configured and passing (0 errors, 0 warnings)
+- **Code Cleanup**: Removed all debug `console.log()` statements
+- **Comprehensive Documentation**: Added MERGE-SUMMARY.md, ROADMAP.md, ROADMAP-FIXES-COMPLETED.md
 
 ### Version 2.3.0 (2025-10-03)
 - **Stacked Badge-Style Price Display**: Ecommerce-optimized price layout with "Normal Price" and "Your Price" rows
