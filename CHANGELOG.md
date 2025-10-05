@@ -184,11 +184,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Removed` - Removed features
 - `Fixed` - Bug fixes
 - `Security` - Security improvements
-## [2.3.3] - 2025-10-05
+## [2.3.4] - 2025-10-05
 
 ### Added
 - GitHub update integration settings (repo/token), auto-update toggle, and force update check
 - GitHub Actions release workflow (build production zip on tag)
 
 ### Changed
-- Bump plugin version to 2.3.3
+- Improve CI packaging step to avoid recursive copy; add manual trigger
+- Bump plugin version to 2.3.4

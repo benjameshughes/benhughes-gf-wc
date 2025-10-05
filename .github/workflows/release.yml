@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,30 +30,29 @@ jobs:
 
       - name: Build zip
         run: |
+          set -e
           ZIP="benhughes-gf-wc-${GITHUB_REF_NAME}.zip"
-          mkdir -p build/benhughes-gf-wc
-          shopt -s dotglob
-          cp -R * build/benhughes-gf-wc/
+          STAGE="build/benhughes-gf-wc"
+          mkdir -p "$STAGE"
+          rsync -a ./ "$STAGE" \
+            --exclude '/build' \
+            --exclude '/.git' \
+            --exclude '/.github' \
+            --exclude '/.idea' \
+            --exclude '/node_modules' \
+            --exclude '/.eslintrc*' \
+            --exclude '/.eslintignore' \
+            --exclude '/JS-TESTING-README.md' \
+            --exclude '/JAVASCRIPT-TESTING-SETUP.md' \
+            --exclude '/LINTING-FIXES-NEEDED.md' \
+            --exclude '/ARCHITECTURE.md' \
+            --exclude '/.claude' \
+            --exclude '/.gitignore' \
+            --exclude '/ROADMAP*.md' \
+            --exclude '/MERGE-SUMMARY.md' \
+            --exclude '/PROJECT-STATUS.md'
           cd build
-          zip -r "$ZIP" benhughes-gf-wc \
-            -x "benhughes-gf-wc/.git/*" \
-            -x "benhughes-gf-wc/.git" \
-            -x "benhughes-gf-wc/.idea/*" \
-            -x "benhughes-gf-wc/.idea" \
-            -x "benhughes-gf-wc/node_modules/*" \
-            -x "benhughes-gf-wc/node_modules" \
-            -x "benhughes-gf-wc/.eslintrc*" \
-            -x "benhughes-gf-wc/.eslintignore" \
-            -x "benhughes-gf-wc/JS-TESTING-README.md" \
-            -x "benhughes-gf-wc/JAVASCRIPT-TESTING-SETUP.md" \
-            -x "benhughes-gf-wc/LINTING-FIXES-NEEDED.md" \
-            -x "benhughes-gf-wc/ARCHITECTURE.md" \
-            -x "benhughes-gf-wc/.claude/*" \
-            -x "benhughes-gf-wc/.claude" \
-            -x "benhughes-gf-wc/.gitignore" \
-            -x "benhughes-gf-wc/ROADMAP*.md" \
-            -x "benhughes-gf-wc/MERGE-SUMMARY.md" \
-            -x "benhughes-gf-wc/PROJECT-STATUS.md"
+          zip -r "$ZIP" benhughes-gf-wc
           echo "ZIP_PATH=build/$ZIP" >> $GITHUB_ENV
 
       - name: Create GitHub Release
