@@ -112,22 +112,14 @@ add_action(
         if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ) ) {
             return;
         }
-        // Default to the public repo if none configured in settings
-        $repo = trim( (string) get_option( 'gf_wc_github_repo', '' ) );
-        if ( '' === $repo ) {
-            $repo = 'https://github.com/benjameshughes/benhughes-gf-wc';
-        }
-
-        // Accept formats: user/repo or full https URL
-        if ( strpos( $repo, 'http' ) !== 0 ) {
-            $repo = 'https://github.com/' . ltrim( $repo, '/' );
-        }
+        // Use a baked-in public repository URL (no configuration needed)
+        $repo = 'https://github.com/benjameshughes/benhughes-gf-wc';
 
         try {
             $update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
                 $repo,
                 __FILE__,
-                'benhughes-gf-wc'
+                \plugin_basename( __FILE__ )
             );
 
             // Use release assets if zips are uploaded to Releases
@@ -136,11 +128,7 @@ add_action(
                 $api->enableReleaseAssets();
             }
 
-            // Private repo support via PAT stored in option (not required for public repos)
-            $token = trim( (string) get_option( 'gf_wc_github_token', '' ) );
-            if ( '' !== $token && method_exists( $update_checker, 'setAuthentication' ) ) {
-                $update_checker->setAuthentication( $token );
-            }
+            // No token required for public repos
         } catch ( \Throwable $e ) {
             // Swallow errors silently; updater is optional
         }

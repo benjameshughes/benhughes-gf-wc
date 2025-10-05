@@ -33,8 +33,6 @@ class SettingsPage {
     private const REST_ADD_OPTION = 'gf_wc_rest_add_to_basket';
     private const ALPINE_SRC_OPTION = 'gf_wc_alpine_source';
     private const AUTO_UPDATE_OPTION = 'gf_wc_auto_update';
-    private const GITHUB_REPO_OPTION = 'gf_wc_github_repo';
-    private const GITHUB_TOKEN_OPTION = 'gf_wc_github_token';
 
 	/**
 	 * Constructor
@@ -143,8 +141,6 @@ class SettingsPage {
         $rest_enabled     = '1' === get_option( self::REST_ADD_OPTION, '0' );
         $alpine_source    = get_option( self::ALPINE_SRC_OPTION, 'cdn' );
         $auto_update      = '1' === get_option( self::AUTO_UPDATE_OPTION, '0' );
-        $github_repo      = get_option( self::GITHUB_REPO_OPTION, '' );
-        $github_token     = get_option( self::GITHUB_TOKEN_OPTION, '' );
 
         ?>
         <div class="wrap">
@@ -185,7 +181,7 @@ class SettingsPage {
 
             <?php $this->render_tools_section( $configured_forms ); ?>
 
-            <?php $this->render_advanced_settings( $rest_enabled, $alpine_source, $auto_update, $github_repo, $github_token ); ?>
+            <?php $this->render_advanced_settings( $rest_enabled, $alpine_source, $auto_update ); ?>
 
 			<h2><?php esc_html_e( 'Debug Settings', 'gf-wc-bridge' ); ?></h2>
 			<?php $this->render_debug_settings( $debug_mode ); ?>
@@ -341,7 +337,7 @@ class SettingsPage {
     /**
      * Render advanced settings (REST toggle, Alpine source)
      */
-    private function render_advanced_settings( bool $rest_enabled, string $alpine_source, bool $auto_update, string $github_repo, string $github_token ): void {
+    private function render_advanced_settings( bool $rest_enabled, string $alpine_source, bool $auto_update ): void {
         ?>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="gf-wc-system-status">
             <?php wp_nonce_field( 'gf_wc_settings', 'gf_wc_settings_nonce' ); ?>
@@ -368,20 +364,7 @@ class SettingsPage {
                             </label>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row"><label for="github_repo"><?php esc_html_e( 'GitHub Repository', 'gf-wc-bridge' ); ?></label></th>
-                        <td>
-                            <input type="text" class="regular-text" name="github_repo" id="github_repo" value="<?php echo esc_attr( $github_repo ); ?>" placeholder="user/repo or https://github.com/user/repo" />
-                            <p class="description"><?php esc_html_e( 'Used for update checks via GitHub Releases. Leave blank to use the default public repo (benjameshughes/benhughes-gf-wc).', 'gf-wc-bridge' ); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="github_token"><?php esc_html_e( 'GitHub Token (optional)', 'gf-wc-bridge' ); ?></label></th>
-                        <td>
-                            <input type="password" class="regular-text" name="github_token" id="github_token" value="<?php echo esc_attr( $github_token ); ?>" />
-                            <p class="description"><?php esc_html_e( 'Only needed for private repos. Store a fine-scoped token; it will be saved in plain text.', 'gf-wc-bridge' ); ?></p>
-                        </td>
-                    </tr>
+                    
                     <tr>
                         <th scope="row"><label for="alpine_source"><?php esc_html_e( 'Alpine.js Source', 'gf-wc-bridge' ); ?></label></th>
                         <td>
@@ -639,11 +622,7 @@ class SettingsPage {
         $auto_update = isset( $_POST['auto_update'] ) ? '1' : '0';
         update_option( self::AUTO_UPDATE_OPTION, $auto_update );
 
-        // Save GitHub updater settings
-        $repo = isset( $_POST['github_repo'] ) ? sanitize_text_field( wp_unslash( $_POST['github_repo'] ) ) : '';
-        update_option( self::GITHUB_REPO_OPTION, $repo );
-        $token = isset( $_POST['github_token'] ) ? sanitize_text_field( wp_unslash( $_POST['github_token'] ) ) : '';
-        update_option( self::GITHUB_TOKEN_OPTION, $token );
+        // No GitHub repo/token settings required for public updates
 
 		// Redirect back with success message
 		wp_safe_redirect(
