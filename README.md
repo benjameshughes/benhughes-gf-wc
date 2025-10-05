@@ -718,6 +718,20 @@ this.showRegularPrice = isOnSale && showSaleComparison;
 ```
 
 **Benefits:**
+
+## Admin Tools & Advanced Options
+
+- Tools on the settings page:
+  - View in Site Health → Info
+  - Copy diagnostics (JSON of versions/config counts)
+  - Clear confirmation messages
+- Advanced settings:
+  - Enable/disable REST add-to-basket endpoint (AJAX recommended)
+  - Choose Alpine.js source (CDN by default, Local if bundled)
+
+## Site Health
+
+Find plugin diagnostics under Tools → Site Health → Info tab in the “GF → WC Cart” section.
 - ✅ **Declarative** - HTML clearly shows what displays when
 - ✅ **Reactive** - Change data, UI updates automatically
 - ✅ **No jQuery** - Modern vanilla JavaScript

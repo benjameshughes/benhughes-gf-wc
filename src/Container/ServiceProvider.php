@@ -13,9 +13,11 @@ namespace BenHughes\GravityFormsWC\Container;
 use BenHughes\GravityFormsWC\Addons\WooCommerceFeedAddon;
 use BenHughes\GravityFormsWC\Admin\AdminNotices;
 use BenHughes\GravityFormsWC\Admin\AdminToolbar;
+use BenHughes\GravityFormsWC\Admin\PluginLinks;
 use BenHughes\GravityFormsWC\Admin\EditorScript;
 use BenHughes\GravityFormsWC\Admin\FieldSettings;
 use BenHughes\GravityFormsWC\Admin\SettingsPage;
+use BenHughes\GravityFormsWC\Admin\SiteHealth;
 use BenHughes\GravityFormsWC\API\CalculatorController;
 use BenHughes\GravityFormsWC\Assets\AssetManager;
 use BenHughes\GravityFormsWC\Cache\CacheInterface;
@@ -31,6 +33,7 @@ use BenHughes\GravityFormsWC\Repositories\GravityFormsRepository;
 use BenHughes\GravityFormsWC\Repositories\ProductRepositoryInterface;
 use BenHughes\GravityFormsWC\Repositories\WooCommerceProductRepository;
 use BenHughes\GravityFormsWC\Services\CartService;
+use BenHughes\GravityFormsWC\Services\CacheInvalidation;
 use BenHughes\GravityFormsWC\Theme\ShuttersTheme;
 use BenHughes\GravityFormsWC\Validation\ConfigValidator;
 
@@ -119,7 +122,7 @@ class ServiceProvider {
 	 *
 	 * @return void
 	 */
-	private function registerCoreServices(): void {
+    private function registerCoreServices(): void {
 		// Cache (singleton)
 		$this->container->register(
 			CacheInterface::class,
@@ -145,13 +148,15 @@ class ServiceProvider {
 		);
 
 		// Cart service (uses calculator and product repository)
-		$this->container->register(
-			CartService::class,
-			fn( Container $c ) => new CartService(
-				$c->get( PriceCalculator::class ),
-				$c->get( ProductRepositoryInterface::class )
-			)
-		);
+        $this->container->register(
+            CartService::class,
+            fn( Container $c ) => new CartService(
+                $c->get( PriceCalculator::class ),
+                $c->get( ProductRepositoryInterface::class )
+            )
+        );
+
+        // Cache invalidation hooks could be registered here if desired
 
 		// Config validator (uses repositories)
 		$this->container->register(
@@ -176,10 +181,10 @@ class ServiceProvider {
 	 *
 	 * @return void
 	 */
-	private function registerAdminServices(): void {
-		if ( ! is_admin() ) {
-			return;
-		}
+    private function registerAdminServices(): void {
+        if ( ! is_admin() ) {
+            return;
+        }
 
 		// Admin notices
 		$this->container->register(
@@ -203,12 +208,24 @@ class ServiceProvider {
 			fn() => new FieldSettings()
 		);
 
-		// Editor script
-		$this->container->register(
-			EditorScript::class,
-			fn() => new EditorScript()
-		);
-	}
+        // Editor script
+        $this->container->register(
+            EditorScript::class,
+            fn() => new EditorScript()
+        );
+
+        // Plugin links (Settings link in Plugins list)
+        $this->container->register(
+            PluginLinks::class,
+            fn() => new PluginLinks()
+        );
+
+        // Site Health debug info
+        $this->container->register(
+            SiteHealth::class,
+            fn( Container $c ) => new SiteHealth( $c->get( ConfigValidator::class ) )
+        );
+    }
 
 	/**
 	 * Register integration services
@@ -225,15 +242,15 @@ class ServiceProvider {
 		);
 
 		// WooCommerce cart integration (if WC is active)
-		if ( class_exists( 'WooCommerce' ) ) {
-			$this->container->register(
-				WooCommerceCart::class,
-				fn( Container $c ) => new WooCommerceCart(
-					$c->get( PriceCalculator::class ),
-					$c->get( CartService::class ),
-					$c->get( Logger::class )
-				)
-			);
+        if ( class_exists( 'WooCommerce' ) ) {
+            $this->container->register(
+                WooCommerceCart::class,
+                fn( Container $c ) => new WooCommerceCart(
+                    $c->get( PriceCalculator::class ),
+                    $c->get( CartService::class ),
+                    $c->get( Logger::class )
+                )
+            );
 
 			// REST API controller
 			$this->container->register(
@@ -265,25 +282,30 @@ class ServiceProvider {
 	 *
 	 * @return void
 	 */
-	public function boot(): void {
+    public function boot(): void {
 		// Boot theme
 		$this->container->get( ShuttersTheme::class );
 
 		// Boot admin services
-		if ( is_admin() ) {
-			$this->container->get( AdminNotices::class );
-			$this->container->get( SettingsPage::class );
-			$this->container->get( FieldSettings::class );
-			$this->container->get( EditorScript::class );
-		}
+        if ( is_admin() ) {
+            $this->container->get( AdminNotices::class );
+            $this->container->get( SettingsPage::class );
+            $this->container->get( FieldSettings::class );
+            $this->container->get( EditorScript::class );
+            $this->container->get( PluginLinks::class );
+            $this->container->get( SiteHealth::class );
 
-		// Boot admin toolbar
-		$this->container->get( AdminToolbar::class );
+            // Register admin-post handler for clearing confirmations
+            add_action( 'admin_post_gf_wc_clear_confirmations', [ SettingsPage::class, 'handle_clear_confirmations' ] );
+        }
+
+        // Boot admin toolbar
+        $this->container->get( AdminToolbar::class );
 
 		// Boot WooCommerce integration
-		if ( class_exists( 'WooCommerce' ) ) {
-			$this->container->get( WooCommerceCart::class );
-			$this->container->get( AssetManager::class );
+        if ( class_exists( 'WooCommerce' ) ) {
+            $this->container->get( WooCommerceCart::class );
+            $this->container->get( AssetManager::class );
 
 			// Register REST API routes
 			add_action( 'rest_api_init', function () {
@@ -338,8 +360,10 @@ class ServiceProvider {
 					$register_addon();
 				} else {
 					add_action( 'gform_loaded', $register_addon, 5 );
-				}
-			}
-		}
+        }
+
+        // Note: Cache invalidation hooks are not booted by default
+    }
+}
 	}
 }

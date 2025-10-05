@@ -104,51 +104,26 @@ class CalculatorController extends WP_REST_Controller {
 			]
 		);
 
-		/**
-		 * DISABLED: /add-to-basket REST endpoint
-		 *
-		 * Per ROADMAP security fix #5 - state-changing operations should use nonce-protected AJAX.
-		 * Use wp_ajax_gf_wc_add_to_basket (in WooCommerceCart) instead.
-		 * If headless/REST support is needed in future, add nonce validation here.
-		 */
-		// register_rest_route(
-		// 	$this->namespace,
-		// 	'/add-to-basket',
-		// 	[
-		// 		'methods'             => 'POST',
-		// 		'callback'            => [ $this, 'add_to_basket' ],
-		// 		'permission_callback' => '__return_true', // Security risk without nonce!
-		// 		'args'                => [
-		// 			'product_id'     => [
-		// 				'required' => true,
-		// 				'type'     => 'integer',
-		// 			],
-		// 			'width'          => [
-		// 				'required' => true,
-		// 				'type'     => 'number',
-		// 			],
-		// 			'drop'           => [
-		// 				'required' => true,
-		// 				'type'     => 'number',
-		// 			],
-		// 			'unit'           => [
-		// 				'required' => false,
-		// 				'type'     => 'string',
-		// 				'default'  => 'cm',
-		// 			],
-		// 			'quantity'       => [
-		// 				'required' => false,
-		// 				'type'     => 'integer',
-		// 				'default'  => 1,
-		// 			],
-		// 			'custom_data'    => [
-		// 				'required' => false,
-		// 				'type'     => 'object',
-		// 				'default'  => [],
-		// 			],
-		// 		],
-		// 	]
-		// );
+        // Conditionally enable /add-to-basket REST endpoint (off by default)
+        if ( '1' === get_option( 'gf_wc_rest_add_to_basket', '0' ) ) {
+            register_rest_route(
+                $this->namespace,
+                '/add-to-basket',
+                [
+                    'methods'             => 'POST',
+                    'callback'            => [ $this, 'add_to_basket' ],
+                    'permission_callback' => '__return_true', // Consider adding REST nonce in future
+                    'args'                => [
+                        'product_id'     => [ 'required' => true, 'type' => 'integer' ],
+                        'width'          => [ 'required' => true, 'type' => 'number' ],
+                        'drop'           => [ 'required' => true, 'type' => 'number' ],
+                        'unit'           => [ 'required' => false, 'type' => 'string', 'default' => 'cm' ],
+                        'quantity'       => [ 'required' => false, 'type' => 'integer', 'default' => 1 ],
+                        'custom_data'    => [ 'required' => false, 'type' => 'object', 'default' => [] ],
+                    ],
+                ]
+            );
+        }
 	}
 
 	/**
