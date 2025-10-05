@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Gravity Forms to WooCommerce Cart
  * Description: Adds Gravity Forms submissions to WooCommerce cart with custom data for the shutter form
- * Version: 2.3.0
+ * Version: 2.3.2
  * Author: Ben Hughes
  * Requires at least: 5.0
  * Requires PHP: 8.2
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'BENHUGHES_GF_WC_VERSION', '2.3.0' );
+define( 'BENHUGHES_GF_WC_VERSION', '2.3.2' );
 define( 'BENHUGHES_GF_WC_FILE', __FILE__ );
 define( 'BENHUGHES_GF_WC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENHUGHES_GF_WC_URL', plugin_dir_url( __FILE__ ) );
@@ -74,6 +74,24 @@ add_action(
     }
 );
 
+// Auto-update opt-in for this plugin (toggle via option 'gf_wc_auto_update')
+add_filter(
+    'auto_update_plugin',
+    static function ( $update, $item ) {
+        try {
+            $target = plugin_basename( __FILE__ );
+            if ( isset( $item->plugin ) && $item->plugin === $target ) {
+                return '1' === get_option( 'gf_wc_auto_update', '0' );
+            }
+        } catch ( \Throwable $e ) {
+            // Fail-safe: do not force updates on errors
+        }
+        return $update;
+    },
+    10,
+    2
+);
+
 // Register activation/deactivation hooks
 \register_activation_hook(
     __FILE__,
@@ -83,4 +101,46 @@ add_action(
 \register_deactivation_hook(
     __FILE__,
     [ '\\BenHughes\\GravityFormsWC\\Admin\\Lifecycle', 'deactivate' ]
+);
+
+// GitHub updater (Plugin Update Checker) - optional
+add_action(
+    'init',
+    static function () {
+        // Only proceed if PUC is installed and a repo is configured
+        if ( ! class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ) ) {
+            return;
+        }
+        $repo = trim( (string) get_option( 'gf_wc_github_repo', '' ) );
+        if ( '' === $repo ) {
+            return;
+        }
+
+        // Accept formats: user/repo or full https URL
+        if ( strpos( $repo, 'http' ) !== 0 ) {
+            $repo = 'https://github.com/' . ltrim( $repo, '/' );
+        }
+
+        try {
+            $update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+                $repo,
+                __FILE__,
+                'benhughes-gf-wc'
+            );
+
+            // Use release assets if zips are uploaded to Releases
+            $api = $update_checker->getVcsApi();
+            if ( method_exists( $api, 'enableReleaseAssets' ) ) {
+                $api->enableReleaseAssets();
+            }
+
+            // Private repo support via PAT stored in option
+            $token = trim( (string) get_option( 'gf_wc_github_token', '' ) );
+            if ( '' !== $token && method_exists( $update_checker, 'setAuthentication' ) ) {
+                $update_checker->setAuthentication( $token );
+            }
+        } catch ( \Throwable $e ) {
+            // Swallow errors silently; updater is optional
+        }
+    }
 );

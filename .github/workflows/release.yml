@@ -1,0 +1,61 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install Composer (no dev)
+        run: composer install --no-dev --prefer-dist --no-progress
+        working-directory: wp-content/plugins/benhughes-gf-wc
+
+      - name: Optimize autoloader
+        run: composer dump-autoload -o --no-dev
+        working-directory: wp-content/plugins/benhughes-gf-wc
+
+      - name: Build zip
+        run: |
+          cd wp-content/plugins
+          ZIP="benhughes-gf-wc-${GITHUB_REF_NAME}.zip"
+          zip -r "$ZIP" benhughes-gf-wc \
+            -x "benhughes-gf-wc/.git/*" \
+            -x "benhughes-gf-wc/.git" \
+            -x "benhughes-gf-wc/.idea/*" \
+            -x "benhughes-gf-wc/.idea" \
+            -x "benhughes-gf-wc/node_modules/*" \
+            -x "benhughes-gf-wc/node_modules" \
+            -x "benhughes-gf-wc/.eslintrc*" \
+            -x "benhughes-gf-wc/.eslintignore" \
+            -x "benhughes-gf-wc/JS-TESTING-README.md" \
+            -x "benhughes-gf-wc/JAVASCRIPT-TESTING-SETUP.md" \
+            -x "benhughes-gf-wc/LINTING-FIXES-NEEDED.md" \
+            -x "benhughes-gf-wc/ARCHITECTURE.md" \
+            -x "benhughes-gf-wc/.claude/*" \
+            -x "benhughes-gf-wc/.claude" \
+            -x "benhughes-gf-wc/.gitignore" \
+            -x "benhughes-gf-wc/ROADMAP*.md" \
+            -x "benhughes-gf-wc/MERGE-SUMMARY.md" \
+            -x "benhughes-gf-wc/PROJECT-STATUS.md" 
+          echo "ZIP_PATH=wp-content/plugins/$ZIP" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

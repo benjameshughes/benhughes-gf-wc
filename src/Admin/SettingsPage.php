@@ -32,6 +32,9 @@ class SettingsPage {
     private const DEBUG_OPTION = 'gf_wc_debug_mode';
     private const REST_ADD_OPTION = 'gf_wc_rest_add_to_basket';
     private const ALPINE_SRC_OPTION = 'gf_wc_alpine_source';
+    private const AUTO_UPDATE_OPTION = 'gf_wc_auto_update';
+    private const GITHUB_REPO_OPTION = 'gf_wc_github_repo';
+    private const GITHUB_TOKEN_OPTION = 'gf_wc_github_token';
 
 	/**
 	 * Constructor
@@ -139,6 +142,9 @@ class SettingsPage {
         $debug_mode       = $this->is_debug_mode();
         $rest_enabled     = '1' === get_option( self::REST_ADD_OPTION, '0' );
         $alpine_source    = get_option( self::ALPINE_SRC_OPTION, 'cdn' );
+        $auto_update      = '1' === get_option( self::AUTO_UPDATE_OPTION, '0' );
+        $github_repo      = get_option( self::GITHUB_REPO_OPTION, '' );
+        $github_token     = get_option( self::GITHUB_TOKEN_OPTION, '' );
 
 		?>
 		<div class="wrap">
@@ -148,7 +154,7 @@ class SettingsPage {
 
             <?php $this->render_tools_section( $configured_forms ); ?>
 
-            <?php $this->render_advanced_settings( $rest_enabled, $alpine_source ); ?>
+            <?php $this->render_advanced_settings( $rest_enabled, $alpine_source, $auto_update, $github_repo, $github_token ); ?>
 
 			<h2><?php esc_html_e( 'Debug Settings', 'gf-wc-bridge' ); ?></h2>
 			<?php $this->render_debug_settings( $debug_mode ); ?>
@@ -280,6 +286,7 @@ class SettingsPage {
                 <a class="button" href="<?php echo esc_url( admin_url( 'site-health.php?tab=debug' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View in Site Health → Info', 'gf-wc-bridge' ); ?></a>
                 <button type="button" class="button" id="gf-wc-copy-diag"><?php esc_html_e( 'Copy diagnostics', 'gf-wc-bridge' ); ?></button>
                 <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_clear_confirmations' ), 'gf_wc_clear_confirmations' ) ); ?>"><?php esc_html_e( 'Clear confirmation messages', 'gf-wc-bridge' ); ?></a>
+                <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_check_updates' ), 'gf_wc_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'gf-wc-bridge' ); ?></a>
             </p>
             <textarea id="gf-wc-diag-src" style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true"><?php echo esc_textarea( (string) $diag_json ); ?></textarea>
             <script>
@@ -303,7 +310,7 @@ class SettingsPage {
     /**
      * Render advanced settings (REST toggle, Alpine source)
      */
-    private function render_advanced_settings( bool $rest_enabled, string $alpine_source ): void {
+    private function render_advanced_settings( bool $rest_enabled, string $alpine_source, bool $auto_update, string $github_repo, string $github_token ): void {
         ?>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="gf-wc-system-status">
             <?php wp_nonce_field( 'gf_wc_settings', 'gf_wc_settings_nonce' ); ?>
@@ -319,6 +326,29 @@ class SettingsPage {
                                 <input type="checkbox" name="rest_add" id="rest_add" value="1" <?php checked( $rest_enabled ); ?> />
                                 <?php esc_html_e( 'Allow the /gf-wc/v1/add-to-basket endpoint (AJAX recommended)', 'gf-wc-bridge' ); ?>
                             </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="auto_update"><?php esc_html_e( 'Auto-update this plugin', 'gf-wc-bridge' ); ?></label></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="auto_update" id="auto_update" value="1" <?php checked( $auto_update ); ?> />
+                                <?php esc_html_e( 'Install updates for this plugin automatically when available', 'gf-wc-bridge' ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_repo"><?php esc_html_e( 'GitHub Repository', 'gf-wc-bridge' ); ?></label></th>
+                        <td>
+                            <input type="text" class="regular-text" name="github_repo" id="github_repo" value="<?php echo esc_attr( $github_repo ); ?>" placeholder="user/repo or https://github.com/user/repo" />
+                            <p class="description"><?php esc_html_e( 'Used for update checks via GitHub Releases. Leave blank to disable.', 'gf-wc-bridge' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_token"><?php esc_html_e( 'GitHub Token (optional)', 'gf-wc-bridge' ); ?></label></th>
+                        <td>
+                            <input type="password" class="regular-text" name="github_token" id="github_token" value="<?php echo esc_attr( $github_token ); ?>" />
+                            <p class="description"><?php esc_html_e( 'Only needed for private repos. Store a fine-scoped token; it will be saved in plain text.', 'gf-wc-bridge' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -574,6 +604,16 @@ class SettingsPage {
             : 'cdn';
         update_option( self::ALPINE_SRC_OPTION, $alpine_src );
 
+        // Save auto-update preference
+        $auto_update = isset( $_POST['auto_update'] ) ? '1' : '0';
+        update_option( self::AUTO_UPDATE_OPTION, $auto_update );
+
+        // Save GitHub updater settings
+        $repo = isset( $_POST['github_repo'] ) ? sanitize_text_field( wp_unslash( $_POST['github_repo'] ) ) : '';
+        update_option( self::GITHUB_REPO_OPTION, $repo );
+        $token = isset( $_POST['github_token'] ) ? sanitize_text_field( wp_unslash( $_POST['github_token'] ) ) : '';
+        update_option( self::GITHUB_TOKEN_OPTION, $token );
+
 		// Redirect back with success message
 		wp_safe_redirect(
 			add_query_arg(
@@ -616,6 +656,26 @@ class SettingsPage {
         // phpcs:enable
 
         wp_safe_redirect( add_query_arg( [ 'page' => 'gf-wc-settings', 'cleared' => '1' ], admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    /**
+     * Force a plugin update check
+     */
+    public static function handle_check_updates(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Insufficient permissions.', 'gf-wc-bridge' ) );
+        }
+        if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'gf_wc_check_updates' ) ) {
+            wp_die( esc_html__( 'Security check failed', 'gf-wc-bridge' ) );
+        }
+        // Clear cached plugin update data and force refresh
+        delete_site_transient( 'update_plugins' );
+        // Fire a background update check
+        if ( function_exists( 'wp_update_plugins' ) ) {
+            wp_update_plugins();
+        }
+        wp_safe_redirect( add_query_arg( [ 'page' => 'gf-wc-settings', 'updates_checked' => '1' ], admin_url( 'admin.php' ) ) );
         exit;
     }
 }
