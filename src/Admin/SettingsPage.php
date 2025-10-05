@@ -29,7 +29,9 @@ class SettingsPage {
 	/**
 	 * Option name for debug mode
 	 */
-	private const DEBUG_OPTION = 'gf_wc_debug_mode';
+    private const DEBUG_OPTION = 'gf_wc_debug_mode';
+    private const REST_ADD_OPTION = 'gf_wc_rest_add_to_basket';
+    private const ALPINE_SRC_OPTION = 'gf_wc_alpine_source';
 
 	/**
 	 * Constructor
@@ -127,20 +129,26 @@ class SettingsPage {
 	 *
 	 * @return void
 	 */
-	public function render_page(): void {
-		// Check user capabilities
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'gf-wc-bridge' ) );
-		}
+    public function render_page(): void {
+        // Check user capabilities
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You do not have permission to access this page.', 'gf-wc-bridge' ) );
+        }
 
-		$configured_forms = $this->validator->get_configured_forms();
-		$debug_mode       = $this->is_debug_mode();
+        $configured_forms = $this->validator->get_configured_forms();
+        $debug_mode       = $this->is_debug_mode();
+        $rest_enabled     = '1' === get_option( self::REST_ADD_OPTION, '0' );
+        $alpine_source    = get_option( self::ALPINE_SRC_OPTION, 'cdn' );
 
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-			<?php $this->render_system_status(); ?>
+            <?php $this->render_system_status(); ?>
+
+            <?php $this->render_tools_section( $configured_forms ); ?>
+
+            <?php $this->render_advanced_settings( $rest_enabled, $alpine_source ); ?>
 
 			<h2><?php esc_html_e( 'Debug Settings', 'gf-wc-bridge' ); ?></h2>
 			<?php $this->render_debug_settings( $debug_mode ); ?>
@@ -158,28 +166,63 @@ class SettingsPage {
 	 *
 	 * @return void
 	 */
-	private function render_system_status(): void {
-		$gf_active = $this->validator->is_gravity_forms_active();
-		$wc_active = $this->validator->is_woocommerce_active();
+    private function render_system_status(): void {
+        $gf_active = $this->validator->is_gravity_forms_active();
+        $wc_active = $this->validator->is_woocommerce_active();
+        // Resolve plugin version from header (fallback to constant)
+        $plugin_ver = 'unknown';
+        if ( ! function_exists( 'get_plugin_data' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $plugin_file = dirname( dirname( __DIR__ ) ) . '/benhughes-gf-wc.php';
+        if ( file_exists( $plugin_file ) ) {
+            $data = get_plugin_data( $plugin_file, false, false );
+            if ( ! empty( $data['Version'] ) ) {
+                $plugin_ver = $data['Version'];
+            }
+        }
+        if ( 'unknown' === $plugin_ver && defined( 'BENHUGHES_GF_WC_VERSION' ) ) {
+            $plugin_ver = BENHUGHES_GF_WC_VERSION;
+        }
 
-		?>
-		<div class="gf-wc-system-status">
-			<h3><?php esc_html_e( 'System Requirements', 'gf-wc-bridge' ); ?></h3>
-			<table class="widefat striped" style="margin: 0;">
-				<tbody>
-					<tr>
-						<td style="width: 200px;"><strong><?php esc_html_e( 'Gravity Forms', 'gf-wc-bridge' ); ?></strong></td>
-						<td>
-							<?php if ( $gf_active ) : ?>
-								<span style="color: #00a32a;">✓ <?php esc_html_e( 'Active', 'gf-wc-bridge' ); ?></span>
-								<?php if ( defined( 'GF_VERSION' ) ) : ?>
-									<span style="color: #666;"> (v<?php echo esc_html( GF_VERSION ); ?>)</span>
-								<?php endif; ?>
-							<?php else : ?>
-								<span style="color: #d63638;">✗ <?php esc_html_e( 'Not Installed', 'gf-wc-bridge' ); ?></span>
-							<?php endif; ?>
-						</td>
-					</tr>
+        ?>
+        <div class="gf-wc-system-status">
+            <h3><?php esc_html_e( 'System Requirements', 'gf-wc-bridge' ); ?></h3>
+            <table class="widefat striped" style="margin: 0;">
+                <tbody>
+                    <tr>
+                        <td style="width: 200px;"><strong><?php esc_html_e( 'Plugin Version', 'gf-wc-bridge' ); ?></strong></td>
+                        <td><span><?php echo esc_html( $plugin_ver ); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px;"><strong><?php esc_html_e( 'Gravity Forms', 'gf-wc-bridge' ); ?></strong></td>
+                        <td>
+                            <?php if ( $gf_active ) : ?>
+                                <span style="color: #00a32a;">✓ <?php esc_html_e( 'Active', 'gf-wc-bridge' ); ?></span>
+                                <?php
+                                $gf_version = '';
+                                if ( class_exists( '\\GFForms' ) && method_exists( '\\GFForms', 'get_version' ) ) {
+                                    $gf_version = (string) \GFForms::get_version();
+                                } elseif ( defined( 'GF_VERSION' ) ) {
+                                    $gf_version = (string) GF_VERSION;
+                                } else {
+                                    // Fallback: read plugin header
+                                    if ( ! function_exists( 'get_plugins' ) ) {
+                                        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+                                    }
+                                    $plugins = get_plugins();
+                                    if ( isset( $plugins['gravityforms/gravityforms.php']['Version'] ) ) {
+                                        $gf_version = (string) $plugins['gravityforms/gravityforms.php']['Version'];
+                                    }
+                                }
+                                if ( $gf_version ) : ?>
+                                    <span style="color: #666;"> (v<?php echo esc_html( $gf_version ); ?>)</span>
+                                <?php endif; ?>
+                            <?php else : ?>
+                                <span style="color: #d63638;">✗ <?php esc_html_e( 'Not Installed', 'gf-wc-bridge' ); ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
 					<tr>
 						<td><strong><?php esc_html_e( 'WooCommerce', 'gf-wc-bridge' ); ?></strong></td>
 						<td>
@@ -211,8 +254,89 @@ class SettingsPage {
 				</tbody>
 			</table>
 		</div>
-		<?php
-	}
+        <?php
+    }
+
+    /**
+     * Render tools section (diagnostics, clear confirmations)
+     */
+    private function render_tools_section( array $configured_forms ): void {
+        $gf_version = defined( 'GF_VERSION' ) ? GF_VERSION : ( class_exists( 'GFForms' ) && method_exists( 'GFForms', 'get_version' ) ? \GFForms::get_version() : 'N/A' );
+        $wc_version = defined( 'WC_VERSION' ) ? WC_VERSION : ( class_exists( 'WooCommerce' ) ? \WC()->version : 'N/A' );
+        $plugin_ver = defined( 'BENHUGHES_GF_WC_VERSION' ) ? BENHUGHES_GF_WC_VERSION : 'N/A';
+        $diag = [
+            'Plugin'          => $plugin_ver,
+            'WordPress'       => get_bloginfo( 'version' ),
+            'PHP'             => phpversion(),
+            'Gravity Forms'   => $gf_version,
+            'WooCommerce'     => $wc_version,
+            'ConfiguredForms' => is_array( $configured_forms ) ? (string) count( $configured_forms ) : '0',
+        ];
+        $diag_json = wp_json_encode( $diag, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
+        ?>
+        <div class="gf-wc-system-status">
+            <h3><?php esc_html_e( 'Tools', 'gf-wc-bridge' ); ?></h3>
+            <p>
+                <a class="button" href="<?php echo esc_url( admin_url( 'site-health.php?tab=debug' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View in Site Health → Info', 'gf-wc-bridge' ); ?></a>
+                <button type="button" class="button" id="gf-wc-copy-diag"><?php esc_html_e( 'Copy diagnostics', 'gf-wc-bridge' ); ?></button>
+                <a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gf_wc_clear_confirmations' ), 'gf_wc_clear_confirmations' ) ); ?>"><?php esc_html_e( 'Clear confirmation messages', 'gf-wc-bridge' ); ?></a>
+            </p>
+            <textarea id="gf-wc-diag-src" style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true"><?php echo esc_textarea( (string) $diag_json ); ?></textarea>
+            <script>
+                (function(){
+                    const btn = document.getElementById('gf-wc-copy-diag');
+                    if (!btn) return;
+                    btn.addEventListener('click', function(){
+                        const ta = document.getElementById('gf-wc-diag-src');
+                        if (!ta) return;
+                        ta.select();
+                        ta.setSelectionRange(0, ta.value.length);
+                        try { document.execCommand('copy'); btn.textContent = '<?php echo esc_js( __( 'Copied!', 'gf-wc-bridge' ) ); ?>'; } catch(e) {}
+                        setTimeout(function(){ btn.textContent = '<?php echo esc_js( __( 'Copy diagnostics', 'gf-wc-bridge' ) ); ?>'; }, 2000);
+                    });
+                })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render advanced settings (REST toggle, Alpine source)
+     */
+    private function render_advanced_settings( bool $rest_enabled, string $alpine_source ): void {
+        ?>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="gf-wc-system-status">
+            <?php wp_nonce_field( 'gf_wc_settings', 'gf_wc_settings_nonce' ); ?>
+            <input type="hidden" name="action" value="gf_wc_save_settings" />
+
+            <h3><?php esc_html_e( 'Advanced', 'gf-wc-bridge' ); ?></h3>
+            <table class="form-table" role="presentation">
+                <tbody>
+                    <tr>
+                        <th scope="row"><label for="rest_add"><?php esc_html_e( 'Enable REST add-to-basket', 'gf-wc-bridge' ); ?></label></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="rest_add" id="rest_add" value="1" <?php checked( $rest_enabled ); ?> />
+                                <?php esc_html_e( 'Allow the /gf-wc/v1/add-to-basket endpoint (AJAX recommended)', 'gf-wc-bridge' ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="alpine_source"><?php esc_html_e( 'Alpine.js Source', 'gf-wc-bridge' ); ?></label></th>
+                        <td>
+                            <select name="alpine_source" id="alpine_source">
+                                <option value="cdn" <?php selected( $alpine_source, 'cdn' ); ?>><?php esc_html_e( 'CDN (default)', 'gf-wc-bridge' ); ?></option>
+                                <option value="local" <?php selected( $alpine_source, 'local' ); ?>><?php esc_html_e( 'Local (if bundled)', 'gf-wc-bridge' ); ?></option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <?php submit_button( __( 'Save Advanced Settings', 'gf-wc-bridge' ) ); ?>
+        </form>
+        <?php
+    }
 
 	/**
 	 * Render debug settings form
@@ -425,7 +549,7 @@ class SettingsPage {
 	 *
 	 * @return void
 	 */
-	public function save_settings(): void {
+    public function save_settings(): void {
 		// Verify nonce
 		if ( ! isset( $_POST['gf_wc_settings_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gf_wc_settings_nonce'] ) ), 'gf_wc_settings' ) ) {
 			wp_die( esc_html__( 'Security check failed', 'gf-wc-bridge' ) );
@@ -436,9 +560,19 @@ class SettingsPage {
 			wp_die( esc_html__( 'You do not have permission to perform this action', 'gf-wc-bridge' ) );
 		}
 
-		// Save debug mode
-		$debug_mode = isset( $_POST['debug_mode'] ) ? '1' : '0';
-		update_option( self::DEBUG_OPTION, $debug_mode );
+        // Save debug mode
+        $debug_mode = isset( $_POST['debug_mode'] ) ? '1' : '0';
+        update_option( self::DEBUG_OPTION, $debug_mode );
+
+        // Save REST add-to-basket toggle
+        $rest_add = isset( $_POST['rest_add'] ) ? '1' : '0';
+        update_option( self::REST_ADD_OPTION, $rest_add );
+
+        // Save Alpine source
+        $alpine_src = isset( $_POST['alpine_source'] ) && in_array( $_POST['alpine_source'], [ 'cdn', 'local' ], true )
+            ? sanitize_text_field( wp_unslash( $_POST['alpine_source'] ) )
+            : 'cdn';
+        update_option( self::ALPINE_SRC_OPTION, $alpine_src );
 
 		// Redirect back with success message
 		wp_safe_redirect(
@@ -458,7 +592,30 @@ class SettingsPage {
 	 *
 	 * @return bool
 	 */
-	public static function is_debug_mode(): bool {
-		return '1' === get_option( self::DEBUG_OPTION, '0' );
-	}
+    public static function is_debug_mode(): bool {
+        return '1' === get_option( self::DEBUG_OPTION, '0' );
+    }
+
+    /**
+     * Handle clear confirmations action
+     */
+    public static function handle_clear_confirmations(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Insufficient permissions.', 'gf-wc-bridge' ) );
+        }
+        if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'gf_wc_clear_confirmations' ) ) {
+            wp_die( esc_html__( 'Security check failed', 'gf-wc-bridge' ) );
+        }
+
+        global $wpdb;
+        $like_key     = $wpdb->esc_like( '_transient_gf_wc_cart_confirmation_' ) . '%';
+        $like_timeout = $wpdb->esc_like( '_transient_timeout_gf_wc_cart_confirmation_' ) . '%';
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared
+        $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '{$like_key}'" );
+        $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '{$like_timeout}'" );
+        // phpcs:enable
+
+        wp_safe_redirect( add_query_arg( [ 'page' => 'gf-wc-settings', 'cleared' => '1' ], admin_url( 'admin.php' ) ) );
+        exit;
+    }
 }

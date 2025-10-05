@@ -48,5 +48,39 @@ if ( ! file_exists( $autoloader ) ) {
 
 require_once $autoloader;
 
+// Lifecycle handlers
+\add_action(
+    'plugins_loaded',
+    static function () {
+        // Defer class loading until autoloader is available
+        if ( ! class_exists( '\\BenHughes\\GravityFormsWC\\Admin\\Lifecycle' ) ) {
+            return;
+        }
+    }
+);
+
 // Initialize plugin
 Plugin::get_instance( __FILE__, BENHUGHES_GF_WC_VERSION );
+
+// Load text domain for translations
+add_action(
+    'init',
+    static function () {
+        \load_plugin_textdomain(
+            'gf-wc-bridge',
+            false,
+            dirname( \plugin_basename( __FILE__ ) ) . '/languages'
+        );
+    }
+);
+
+// Register activation/deactivation hooks
+\register_activation_hook(
+    __FILE__,
+    [ '\\BenHughes\\GravityFormsWC\\Admin\\Lifecycle', 'activate' ]
+);
+
+\register_deactivation_hook(
+    __FILE__,
+    [ '\\BenHughes\\GravityFormsWC\\Admin\\Lifecycle', 'deactivate' ]
+);

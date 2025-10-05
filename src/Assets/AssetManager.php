@@ -114,10 +114,19 @@ class AssetManager {
          *     return plugin_dir_url( __FILE__ ) . 'assets/vendor/alpinejs/cdn.min.js';
          * } );
          */
-        $alpine_src = apply_filters(
-            'gf_wc_alpine_src',
-            'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js'
-        );
+        // Determine Alpine source from option (cdn|local), fallback to CDN
+        $source_preference = get_option( 'gf_wc_alpine_source', 'cdn' );
+        $default_src       = 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js';
+        $alpine_src        = $default_src;
+
+        if ( 'local' === $source_preference ) {
+            // Provide a local path if bundled; otherwise, fallback
+            $local_candidate = $this->plugin_url . 'assets/vendor/alpinejs/cdn.min.js';
+            $alpine_src      = $local_candidate;
+        }
+
+        // Allow filter override
+        $alpine_src = apply_filters( 'gf_wc_alpine_src', $alpine_src );
 
         wp_enqueue_script(
             'alpinejs',
