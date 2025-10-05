@@ -197,3 +197,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump plugin version to 2.3.5 (no functional changes)
+
+## [2.3.6] - 2025-10-05
+
+### Changed
+- Bump plugin version to 2.3.6

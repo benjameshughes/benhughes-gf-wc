@@ -146,9 +146,40 @@ class SettingsPage {
         $github_repo      = get_option( self::GITHUB_REPO_OPTION, '' );
         $github_token     = get_option( self::GITHUB_TOKEN_OPTION, '' );
 
-		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+            <?php
+            // Inline admin notices for actions
+            if ( isset( $_GET['updated'] ) ) {
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'gf-wc-bridge' ) . '</p></div>';
+            }
+
+            if ( isset( $_GET['cleared'] ) ) {
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Confirmation messages cleared.', 'gf-wc-bridge' ) . '</p></div>';
+            }
+
+            if ( isset( $_GET['updates_checked'] ) ) {
+                // Try to detect whether an update is available right now
+                $plugin_file = plugin_basename( dirname( dirname( __DIR__ ) ) . '/benhughes-gf-wc.php' );
+                $transient   = get_site_transient( 'update_plugins' );
+                $update_html = '';
+                if ( is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response ) && isset( $transient->response[ $plugin_file ] ) ) {
+                    $info        = $transient->response[ $plugin_file ];
+                    $new_version = isset( $info->new_version ) ? (string) $info->new_version : '';
+                    $update_html = sprintf(
+                        /* translators: %s: version number */
+                        esc_html__( 'Update check complete. An update is available to version %s. Visit the Plugins page to install.', 'gf-wc-bridge' ),
+                        esc_html( $new_version )
+                    );
+                } else {
+                    $update_html = esc_html__( 'Update check complete. No updates available right now.', 'gf-wc-bridge' );
+                }
+                $plugins_url = admin_url( 'plugins.php' );
+                echo '<div class="notice notice-info is-dismissible"><p>' . wp_kses_post( $update_html ) . ' <a href="' . esc_url( $plugins_url ) . '">' . esc_html__( 'Open Plugins', 'gf-wc-bridge' ) . '</a></p></div>';
+            }
+            ?>
 
             <?php $this->render_system_status(); ?>
 
