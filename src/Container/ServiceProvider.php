@@ -297,6 +297,8 @@ class ServiceProvider {
 
             // Register admin-post handler for clearing confirmations
             add_action( 'admin_post_gf_wc_clear_confirmations', [ SettingsPage::class, 'handle_clear_confirmations' ] );
+            // Register admin-post handler for force update check
+            add_action( 'admin_post_gf_wc_check_updates', [ SettingsPage::class, 'handle_check_updates' ] );
         }
 
         // Boot admin toolbar

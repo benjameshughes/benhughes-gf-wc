@@ -9,8 +9,9 @@
             "email": "ben@example.com"
         }
     ],
-    "require": {
-        "php": ">=8.2"
+  "require": {
+        "php": ">=8.2",
+        "yahnis-elsts/plugin-update-checker": "^5.4"
     },
     "autoload": {
         "psr-4": {
