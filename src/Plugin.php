@@ -107,7 +107,7 @@ class Plugin {
      */
     private function init_hooks(): void {
         add_action( 'gform_loaded', [ $this, 'register_field' ], 5 );
-        add_action( 'plugins_loaded', [ $this, 'init_components' ] );
+        add_action( 'init', [ $this, 'init_components' ] );
     }
 
     /**
