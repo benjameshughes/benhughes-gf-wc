@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Gravity Forms to WooCommerce Cart
  * Description: Adds Gravity Forms submissions to WooCommerce cart with custom data for the shutter form
- * Version: 2.4.2
+ * Version: 2.4.3
  * Author: Ben Hughes
  * Requires at least: 5.0
  * Requires PHP: 8.2
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'BENHUGHES_GF_WC_VERSION', '2.4.2' );
+define( 'BENHUGHES_GF_WC_VERSION', '2.4.3' );
 define( 'BENHUGHES_GF_WC_FILE', __FILE__ );
 define( 'BENHUGHES_GF_WC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENHUGHES_GF_WC_URL', plugin_dir_url( __FILE__ ) );
@@ -64,7 +64,7 @@ Plugin::get_instance( __FILE__, BENHUGHES_GF_WC_VERSION );
 
 // Load text domain for translations
 add_action(
-    'init',
+    'plugins_loaded',
     static function () {
         \load_plugin_textdomain(
             'gf-wc-bridge',
@@ -72,7 +72,7 @@ add_action(
             dirname( \plugin_basename( __FILE__ ) ) . '/languages'
         );
     },
-    1 // Priority 1 to ensure translations load before components initialize
+    1 // Priority 1 to ensure translations load before Gravity Forms and components
 );
 
 // Auto-update opt-in for this plugin (toggle via option 'gf_wc_auto_update')

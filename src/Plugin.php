@@ -106,7 +106,8 @@ class Plugin {
      * @return void
      */
     private function init_hooks(): void {
-        add_action( 'gform_loaded', [ $this, 'register_field' ], 5 );
+        // Register fields at init (after translations load) instead of gform_loaded
+        add_action( 'init', [ $this, 'register_field' ], 5 );
         add_action( 'init', [ $this, 'init_components' ], 10 );
     }
 
